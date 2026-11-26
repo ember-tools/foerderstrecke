@@ -53,6 +53,16 @@ class CreationLimitTest(unittest.TestCase):
         self.assertTrue(limit.allow("b", now=20))
         self.assertTrue(limit.allow("a", now=3601))
 
+    def test_a_client_idle_for_an_hour_is_forgotten(self):
+        limit = CreationLimit(2)
+        limit.allow("a", now=0)
+        limit.allow("b", now=3000)
+        limit.forget_idle(now=3000)
+        self.assertTrue(limit.tracks("a"))
+        limit.forget_idle(now=3700)
+        self.assertFalse(limit.tracks("a"))
+        self.assertTrue(limit.tracks("b"))
+
 
 class ApiTest(unittest.TestCase):
     def setUp(self):

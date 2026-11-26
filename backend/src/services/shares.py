@@ -94,7 +94,8 @@ class ShareStore:
 
 
 class CreationLimit:
-    """How many shares one client may make per hour."""
+    """How many shares one client may make per hour. `forget_idle` drops the clients without a
+    creation in the last hour, so no address is kept longer than the limit needs it."""
 
     def __init__(self, per_hour: int) -> None:
         """Allow `per_hour` creations per client within any hour."""
@@ -112,9 +113,18 @@ class CreationLimit:
             if len(recent) >= self.per_hour:
                 return False
             recent.append(now)
-            if len(self._created) > 10_000:
-                self._created = {key: value for key, value in self._created.items() if value}
             return True
+
+    def tracks(self, client: str) -> bool:
+        """Tell whether a client is still kept."""
+        with self._lock:
+            return client in self._created
+
+    def forget_idle(self, now: float | None = None) -> None:
+        """Drop the clients without a creation in the last hour."""
+        now = time.time() if now is None else now
+        with self._lock:
+            self._created = {key: value for key, value in self._created.items() if value and now - value[-1] <= 3600}
 
 
 @dataclass

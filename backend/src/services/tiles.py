@@ -49,6 +49,7 @@ GLOBAL_MISSES_PER_SECOND = 2.0
 CLIENT_MISS_BURST = 400
 CLIENT_MISSES_PER_SECOND = 1.0
 TOUCH_INTERVAL = 3600.0
+FORGET_AFTER = 3600.0
 EVICTION_BATCH = 500
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,9 @@ class MissBudget:
     through several levels at once needs a few hundred new tiles and stays inside the burst, while
     the slow refill keeps the sustained rate far below anything that could count as bulk
     downloading; a loop walking the whole box, millions of tiles, does not get far.
+
+    `forget_idle` drops the buckets left alone for `FORGET_AFTER` seconds: by then they have refilled
+    anyway, so no address is kept longer than needed.
     """
 
     def __init__(self, clock: Callable[[], float] = time.time) -> None:
@@ -91,9 +95,16 @@ class MissBudget:
             return False
         self._buckets["*"] = (everyone - 1, now)
         self._buckets[f"client:{client}"] = (own - 1, now)
-        if len(self._buckets) > 10_000:
-            self._buckets = {key: value for key, value in self._buckets.items() if now - value[1] < 3600}
         return True
+
+    def tracks(self, client: str) -> bool:
+        """Tell whether a client's bucket is still kept."""
+        return f"client:{client}" in self._buckets
+
+    def forget_idle(self) -> None:
+        """Drop the buckets left alone for `FORGET_AFTER` seconds."""
+        now = self.clock()
+        self._buckets = {key: value for key, value in self._buckets.items() if now - value[1] < FORGET_AFTER}
 
     def _level(self, key: str, burst: float, rate: float, now: float) -> float:
         """Return how many tokens a bucket holds right now."""
@@ -300,6 +311,10 @@ class TileCache:
             self._background.add(task)
             task.add_done_callback(self._background.discard)
         return cached.image
+
+    def forget_idle_clients(self) -> None:
+        """Forget the clients whose miss budget has been left alone for an hour."""
+        self._budget.forget_idle()
 
     def evict(self) -> int:
         """Delete the tiles unread for longer than the retention, then the ones read longest ago

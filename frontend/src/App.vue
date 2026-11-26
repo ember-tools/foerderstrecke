@@ -27,7 +27,9 @@ useHead({
         <RouterLink to="/" class="nav-link">{{ t('nav.landing') }}</RouterLink>
         <RouterLink to="/planer" class="nav-link">{{ t('nav.planner') }}</RouterLink>
         <RouterLink to="/lernen" class="nav-link">{{ t('nav.learn') }}</RouterLink>
-        <RouterLink to="/hilfe" class="nav-link">{{ t('nav.help') }}</RouterLink>
+        <RouterLink to="/hilfe" class="nav-link" :class="{'router-link-exact-active': route.name === 'HelpTopic'}">
+          {{ t('nav.help') }}
+        </RouterLink>
       </template>
     </AppHeader>
 
