@@ -4,6 +4,8 @@ const routes: RouteRecordRaw[] = [
     {path: '/', name: 'Landing', component: () => import('../views/LandingView.vue'), meta: {public: true}},
     {path: '/planer', name: 'Planner', component: () => import('../views/PlannerView.vue'),
         meta: {titleKey: 'routes.planner'}},
+    {path: '/lernen', name: 'Learn', component: () => import('../views/LearnView.vue'),
+        meta: {titleKey: 'routes.learn'}},
     {path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('../views/NotFoundView.vue'),
         meta: {titleKey: 'routes.notFound'}},
 ]

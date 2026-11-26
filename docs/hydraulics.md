@@ -253,7 +253,9 @@ source's rounding or method leaves a line short, the expected result here is the
    10 bar add 8.5 bar each. 34.72 − 10 − 13.5 = 11.22; ceil(11.22 / 8.5) = 2 → **4 pumps**
    (10 + 13.5 + 2 × 8.5 = 40.5 ≥ 34.72; with three, 32 < 34.72). The source names this pump
    FPN 15-1000 on one slide and FPN 15-2000 on the next; only its
-   15 bar matter here.
+   15 bar matter here. The source does not say where the fall lies; the learning task draws the
+   rise over the first 1000 m and the fall over the last 460 m, which changes the sketch and where
+   the pumps stand, not their number.
 5. **Textbook series** [CGDIS 66–68], all Q 1000 l/min, 1.7 bar per 100 m, p_end 4.5 bar,
    p_a 10 bar:
    - Aufgabe 2.1: 1700 m, 80 m rise, total 41.4 bar → **5 pumps**.

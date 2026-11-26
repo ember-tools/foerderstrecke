@@ -31,10 +31,15 @@ function label(index: number): string {
 <template>
   <section class="flex flex-col gap-3">
     <h3 class="m-0 text-sm font-semibold">{{ t('planner.heights.label') }}</h3>
-    <p v-if="elevation.state === 'loading'" class="m-0 text-sm text-muted">{{ t('planner.heights.loading') }}</p>
-    <UAlert v-if="elevation.state === 'failed'" color="warning" variant="subtle" icon="i-lucide-mountain"
-            :description="t(`planner.heights.failed.${elevation.reason}`)"/>
-    <p class="m-0 text-sm text-muted">{{ t('planner.heights.surfaceModel') }}</p>
+    <USwitch :model-value="plan.heightSource === 'manual'" :label="t('planner.heights.manual')"
+             :description="t('planner.heights.manualHelp')"
+             @update:model-value="value => plan.heightSource = value ? 'manual' : 'model'"/>
+    <template v-if="plan.heightSource === 'model'">
+      <p v-if="elevation.state === 'loading'" class="m-0 text-sm text-muted">{{ t('planner.heights.loading') }}</p>
+      <UAlert v-if="elevation.state === 'failed'" color="warning" variant="subtle" icon="i-lucide-mountain"
+              :description="t(`planner.heights.failed.${elevation.reason}`)"/>
+      <p class="m-0 text-sm text-muted">{{ t('planner.heights.surfaceModel') }}</p>
+    </template>
     <ul class="m-0 flex list-none flex-col gap-2 p-0">
       <li v-for="(point, index) in plan.route" :key="`${index}-${point[0]}-${point[1]}`"
           class="grid grid-cols-[1fr_7.5rem_auto] items-center gap-2">
@@ -42,7 +47,7 @@ function label(index: number): string {
           <div class="truncate font-medium">{{ label(index) }}</div>
           <div class="text-xs text-muted">
             {{ formatDistance(store.distances.value[index] ?? 0) }}
-            <template v-if="store.modelHeights.value[index] != null">
+            <template v-if="plan.heightSource === 'model' && store.modelHeights.value[index] != null">
               · {{ t('planner.heights.model', {value: formatHeight(store.modelHeights.value[index]!)}) }}
             </template>
           </div>
@@ -56,6 +61,6 @@ function label(index: number): string {
         <span v-else class="w-8"/>
       </li>
     </ul>
-    <p v-if="attribution" class="m-0 text-xs text-muted">{{ attribution }}</p>
+    <p v-if="attribution && plan.heightSource === 'model'" class="m-0 text-xs text-muted">{{ attribution }}</p>
   </section>
 </template>

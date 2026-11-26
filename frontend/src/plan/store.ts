@@ -33,6 +33,7 @@ export function createPlanStore(initial?: Plan) {
         return distances.value.map(at => heightAt(model, at))
     })
     const samples = computed(() => {
+        if (plan.value.heightSource === 'manual') return []
         const current = elevation.value
         if (current.state === 'ready') return current.samples
         return current.state === 'loading' && current.previous ? current.previous : []
@@ -57,10 +58,10 @@ export function createPlanStore(initial?: Plan) {
 
     let profileTimer: ReturnType<typeof setTimeout> | undefined
     let request: AbortController | undefined
-    watch(() => JSON.stringify(plan.value.route), () => {
+    watch(() => [JSON.stringify(plan.value.route), plan.value.heightSource], () => {
         clearTimeout(profileTimer)
         request?.abort()
-        if (plan.value.route.length < 2) {
+        if (plan.value.route.length < 2 || plan.value.heightSource === 'manual') {
             elevation.value = {state: 'none'}
             return
         }
@@ -187,11 +188,23 @@ function load(): Plan {
     }
 }
 
-/** Keep a plan in this browser; a full or blocked storage keeps nothing, and the plan lives on in the page. */
-function save(plan: Plan) {
+/** Whether this browser keeps a plan with a drawn line. */
+export function hasStoredPlan(): boolean {
+    return load().route.length > 0
+}
+
+/** Keep a plan in this browser as the one the planner opens; tell whether the storage took it. */
+export function storePlan(plan: Plan): boolean {
+    return save(plan)
+}
+
+/** Keep a plan in this browser and tell whether that worked; a full or blocked storage keeps
+ * nothing, and an edited plan lives on in the page. */
+function save(plan: Plan): boolean {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(plan))
+        return true
     } catch {
-        return
+        return false
     }
 }

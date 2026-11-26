@@ -26,6 +26,7 @@ useHead({
       <template #nav>
         <RouterLink to="/" class="nav-link">{{ t('nav.landing') }}</RouterLink>
         <RouterLink to="/planer" class="nav-link">{{ t('nav.planner') }}</RouterLink>
+        <RouterLink to="/lernen" class="nav-link">{{ t('nav.learn') }}</RouterLink>
       </template>
     </AppHeader>
 

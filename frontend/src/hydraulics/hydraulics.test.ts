@@ -119,6 +119,9 @@ describe('reference cases', () => {
         expect(placed.stations[1]!.discharge).toBe(15)
         expect(placed.holds).toBe(true)
         expect(calculateLine({...input, stations: stations.slice(0, 3)}).holds).toBe(false)
+        const suggested = suggestStations(input, DEFAULT_PUMP, undefined,
+            [{pump: pumpType('pfpn-10-1000'), discharge: 10}, {pump: fpn15, discharge: 15}])
+        expect(suggested.stations).toEqual([0, 400, 1040, 1440])
     })
 
     it.each([

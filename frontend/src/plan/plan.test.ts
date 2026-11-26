@@ -154,6 +154,11 @@ describe('reading plans', () => {
         expect(plan.corrections).toEqual([10, 30])
     })
 
+    it('keeps heights entered by hand only for the known setting', () => {
+        expect(readPlan({version: 1, heightSource: 'manual'})!.heightSource).toBe('manual')
+        expect(readPlan({version: 1, heightSource: 'guess'})!.heightSource).toBe('model')
+    })
+
     it('gives duplicate pump ids new ones', () => {
         const pump = {id: 'same', at: 0, type: 'fpn-10-1000', discharge: null, mode: null}
         const plan = readPlan({version: 1, pumps: [pump, {...pump, at: 300}]})!
@@ -277,6 +282,21 @@ describe('store', () => {
         expect(store.plan.value.pumps[0]!.at).toBe(0)
         store.addPump()
         expect(store.plan.value.pumps[1]!.at).toBe(Math.round(store.length.value / 2))
+    })
+
+    it('neither asks for heights nor uses model heights when they are entered by hand', async () => {
+        const store = createPlanStore({
+            ...emptyPlan(), route: [[52.5, 13.4], [52.5, 13.42]], corrections: [10, 30], heightSource: 'manual',
+        })
+        await vi.runAllTimersAsync()
+        expect(fetch).not.toHaveBeenCalled()
+        expect(store.elevation.value.state).toBe('none')
+        expect(heightAt(store.profile.value, 0)).toBe(10)
+        expect(heightAt(store.profile.value, store.length.value)).toBe(30)
+        store.plan.value.heightSource = 'model'
+        await vi.runAllTimersAsync()
+        expect(fetch).toHaveBeenCalledOnce()
+        expect(heightAt(store.profile.value, 0)).toBe(10)
     })
 
     it('keeps the last heights while new ones load', async () => {

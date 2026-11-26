@@ -29,6 +29,9 @@ export interface Plan {
     route: LatLng[]
     /** Heights entered by hand per vertex in metres, null where the model height stands. */
     corrections: (number | null)[]
+    /** Whether the heights come from the elevation data, corrected per vertex, or only from the
+     * heights entered by hand, as for a task whose line exists on paper only. */
+    heightSource: 'model' | 'manual'
     source: {kind: SourceKind, suctionLift: number, pressure: number, yield: number}
     end: {preset: EndPreset, requirement: number}
     /** Flow in l/min. */
@@ -55,6 +58,7 @@ export function emptyPlan(): Plan {
         title: '',
         route: [],
         corrections: [],
+        heightSource: 'model',
         source: {kind: 'open-water', suctionLift: 1.5, pressure: 3, yield: HYDRANT_YIELD['hydrant-underground']},
         end: {preset: 'multiPurpose', requirement: END_REQUIREMENTS.multiPurpose},
         flow: 800,
@@ -197,6 +201,7 @@ export function readPlan(raw: unknown): Plan | null {
         title: typeof data.title === 'string' ? data.title.slice(0, 120) : '',
         route,
         corrections,
+        heightSource: data.heightSource === 'manual' ? 'manual' : 'model',
         source: {
             kind: oneOf(source.kind, SOURCE_KINDS, defaults.source.kind),
             suctionLift: finite(source.suctionLift, defaults.source.suctionLift, 0, MAX_PRESSURE),

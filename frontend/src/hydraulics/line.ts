@@ -248,9 +248,14 @@ export interface Suggestion {
  * Suggest pump stations, all of one type and taking water the line's way: walking from the
  * source, each next pump stands at the farthest whole hose at which the section still holds,
  * until the last pump reaches the end. The first pump stands at the source. Stops where not even
- * one hose holds, before a hydrant too weak to feed a pump, and after `maxStations` pumps.
+ * one hose holds, before a hydrant too weak to feed a pump, and after `maxStations` pumps. The
+ * first stations may be given their own pump and discharge pressure in `firstStations`, as when a
+ * task sets a stronger pump second; the rest are `pump` at the line's discharge pressure.
  */
-export function suggestStations(input: Omit<LineInput, 'stations'>, pump: PumpType, maxStations?: number): Suggestion {
+export function suggestStations(
+    input: Omit<LineInput, 'stations'>, pump: PumpType, maxStations?: number,
+    firstStations: readonly {pump: PumpType, discharge: number}[] = [],
+): Suggestion {
     const length = profileLength(input.profile)
     const limit = maxStations ?? Math.ceil(length / HOSE_LENGTH) + 1
     const lossPer100 = linePer100(input.table, input.flow, input.lines)
@@ -262,7 +267,8 @@ export function suggestStations(input: Omit<LineInput, 'stations'>, pump: PumpTy
         return {stations, feasible: false, problem: 'hydrant-pressure', stuckAt: null}
     }
     while (stations.length <= limit) {
-        const discharge = Math.min(input.discharge, dischargeCap(pump, inlet))
+        const station = firstStations[stations.length - 1] ?? {pump, discharge: input.discharge}
+        const discharge = Math.min(station.discharge, dischargeCap(station.pump, inlet))
         if (evaluateSection(input.profile, position, length, discharge, lossPer100, input.endRequirement).holds) {
             return {stations, feasible: true, problem: null, stuckAt: null}
         }

@@ -3,6 +3,9 @@ export type LatLng = readonly [number, number]
 
 const EARTH_RADIUS = 6_371_008.8
 
+/** The length of one degree of latitude in metres, on the sphere the distances are measured on. */
+export const METRES_PER_DEGREE = EARTH_RADIUS * Math.PI / 180
+
 /** The great-circle distance between two positions in metres, as the server measures it. */
 export function distance(start: LatLng, end: LatLng): number {
     const phi1 = start[0] * Math.PI / 180
