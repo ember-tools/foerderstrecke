@@ -6,6 +6,8 @@ let
     uvicorn
     pydantic-settings
     httpx
+    numpy
+    rasterio
   ]);
 in
 pkgs.mkShell

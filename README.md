@@ -13,12 +13,31 @@ The interface is German throughout; it is meant for German fire services.
 ## Running it
 
 The image is `ghcr.io/ember-tools/foerderstrecke`. `compose.yml` builds and starts it locally on
-port 8082; `compose.dev.yml` runs the backend with reload and Vite on port 5177.
+port 8082 and needs the elevation data prepared first (see below); `compose.dev.yml` runs the
+backend with reload and Vite on port 5177, and mounts the elevation data if it is there.
 
 ```sh
+./toolchain.sh elevation   # download and prepare the elevation data; the image needs it
 ./toolchain.sh verify      # backend tests, frontend tests, type check and build
 ./toolchain.sh be-serve    # build the frontend and serve everything on port 8000
 ```
+
+### Elevation data
+
+Heights come from the [Copernicus DEM GLO-30](https://spacedata.copernicus.eu/collections/copernicus-digital-elevation-model),
+a surface model (it includes buildings and trees) at about 30 m spacing. The server answers height
+and profile requests from its own copy, so no third party sees where a line runs.
+
+The data is never part of the repository. `tools/elevation.py` downloads the source tiles touching
+the map's box around Germany from the dataset's public bucket, checks each against the SHA-256 in
+`tools/elevation-sources.txt`, crops them to the box and writes whole metres in a compact grid
+format (`backend/src/elevation/grid.py`), about 280 MB for the box. CI keeps the result in its
+cache, keyed by the script, the checksums and the format, and the image carries it in a layer of
+its own at `/elevation`, built with fixed file times: an update that leaves the data alone leaves
+that layer alone, so a server pulling the new image does not download the heights again.
+
+Credit: Copernicus DEM GLO-30 © DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018,
+provided under COPERNICUS by the European Union and ESA; all rights reserved.
 
 ### Behind Traefik
 
@@ -49,6 +68,7 @@ Everything the server keeps lives under `/data`:
 | Variable | Default | Meaning |
 |---|---|---|
 | `DATA_DIR` | `/data` in the image | Where tiles are kept |
+| `ELEVATION_DIR` | `/elevation` in the image | Where the prepared elevation data is read from |
 | `CORS_ORIGINS` | `*` | Comma separated allowed origins; `https://foerderstrecke.emberbox.app` in production |
 | `TILE_RETENTION_DAYS` | `30` | Days after its last read until a map tile is deleted |
 | `TILE_MAX_BYTES` | `2147483648` | Upper limit of the tile cache in bytes |

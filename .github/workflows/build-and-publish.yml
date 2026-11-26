@@ -22,6 +22,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Restore elevation data
+        id: elevation
+        uses: actions/cache@v6
+        with:
+          path: elevation/tiles
+          key: elevation-${{ hashFiles('tools/elevation.py', 'tools/elevation-sources.txt', 'backend/src/elevation/grid.py') }}
+
+      - name: Set up Python for the elevation data
+        if: steps.elevation.outputs.cache-hit != 'true'
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      - name: Prepare elevation data
+        if: steps.elevation.outputs.cache-hit != 'true'
+        run: |
+          pip install numpy rasterio
+          python tools/elevation.py fetch
+          python tools/elevation.py build
+          rm -rf elevation/download
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -72,7 +93,9 @@ jobs:
             sleep 1
             curl -fs http://127.0.0.1:8000/api/health && break
           done
-          curl -fs http://127.0.0.1:8000/api/health
+          curl -fs http://127.0.0.1:8000/api/health | grep -q '"elevation":"copernicus'
+          curl -fs -X POST -H 'Content-Type: application/json' -d '{"points":[[51.7991,10.6156]]}' \
+            http://127.0.0.1:8000/api/elevation/points | grep -q '"heights":\[11[0-9][0-9]'
           curl -fs http://127.0.0.1:8000/ | grep -q '<title>Förderstrecke'
           curl -fs -D - -o /dev/null http://127.0.0.1:8000/planer | grep -qi "x-robots-tag: noindex"
           docker rm -f smoke

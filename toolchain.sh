@@ -47,11 +47,16 @@ Backend
   be-dev                uvicorn with --reload on port 8000 (PORT_BACKEND overrides)
   be-serve              fe-deploy, then serve everything
 
+Elevation data
+  elevation             Download the Copernicus DEM tiles (checked against their checksums) and
+                        write the grid files the server reads into elevation/tiles
+
 Docker
-  docker-build [args]   Build the production image
-  docker-app            Start it detached on port 8082
+  docker-build [args]   Build the production image; needs `elevation` first
+  docker-app            Build and start it detached on port 8082; needs `elevation` first
   docker-app-down       Stop it again
-  docker-dev            Start the dev stack: backend with --reload, Vite on 5177
+  docker-dev            Start the dev stack: backend with --reload, Vite on 5177; uses the
+                        elevation data when prepared
 
 Combined
   verify                be-test, fe-test and fe-build, what CI runs
@@ -60,6 +65,14 @@ USAGE
 
 fe() { cd "$FRONTEND"; }
 be() { cd "$BACKEND/src"; }
+
+need_elevation() {
+    if [ ! -f "$ROOT/elevation/tiles/VERSION" ]; then
+        echo "The image carries the elevation data, which is not prepared yet. Run once:" >&2
+        echo "    ./toolchain.sh elevation" >&2
+        exit 2
+    fi
+}
 
 cmd="${1:-help}"
 shift || true
@@ -89,10 +102,16 @@ case "$cmd" in
         be; run uvicorn main:app --port "$PORT_BACKEND" "$@"
         ;;
 
-    docker-build)     cd "$ROOT"; docker build -t foerderstrecke:dev . "$@" ;;
-    docker-app)       cd "$ROOT"; docker compose up -d --build "$@" ;;
+    elevation)
+        cd "$ROOT"
+        run python tools/elevation.py fetch
+        run python tools/elevation.py build
+        ;;
+
+    docker-build)     need_elevation; cd "$ROOT"; docker build -t foerderstrecke:dev . "$@" ;;
+    docker-app)       need_elevation; cd "$ROOT"; docker compose up -d --build "$@" ;;
     docker-app-down)  cd "$ROOT"; docker compose down "$@" ;;
-    docker-dev)       cd "$ROOT"; docker compose -f compose.dev.yml up --build "$@" ;;
+    docker-dev)       mkdir -p "$ROOT/elevation/tiles"; cd "$ROOT"; docker compose -f compose.dev.yml up --build "$@" ;;
 
     verify)
         "$ROOT/toolchain.sh" be-test

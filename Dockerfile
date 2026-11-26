@@ -24,14 +24,17 @@ LABEL org.opencontainers.image.title="Förderstrecke" \
       org.opencontainers.image.licenses="AGPL-3.0-or-later"
 WORKDIR /app
 
-COPY backend/src/ ./src/
-COPY --from=frontend-build /app/dist ./static/
+COPY --link elevation/tiles/ /elevation/
 
 ENV DATA_DIR=/data \
+    ELEVATION_DIR=/elevation \
     LOG_FORMAT=json
 RUN mkdir -p /data \
  && useradd --system --uid 10001 foerderstrecke \
- && chown -R foerderstrecke:foerderstrecke /app /data
+ && chown -R foerderstrecke:foerderstrecke /data
+
+COPY backend/src/ ./src/
+COPY --from=frontend-build /app/dist ./static/
 USER foerderstrecke
 VOLUME ["/data"]
 

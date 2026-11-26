@@ -10,4 +10,4 @@ backend/data/
 backend/static/
 frontend/auto-imports.d.ts
 frontend/components.d.ts
-elevation/
+/elevation/

@@ -13,4 +13,4 @@ backend/data
 __pycache__
 *.pyc
 .env
-elevation/download
+/elevation/download

@@ -3,15 +3,19 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DATA = Path(__file__).resolve().parent.parent.parent / "data"
+_ELEVATION = Path(__file__).resolve().parents[3] / "elevation" / "tiles"
 
 
 class Settings(BaseSettings):
     """
     Everything the server reads from the environment. Outside a container the data directory sits
-    beside the sources and is gitignored; the image points it at the mounted volume.
+    beside the sources and is gitignored; the image points it at the mounted volume. The elevation
+    data is read only: locally it is where `./toolchain.sh elevation` writes it, in the image a
+    layer of its own.
     """
 
     data_dir: Path = _DATA
+    elevation_dir: Path = _ELEVATION
     cors_origins: str = "*"
     tile_retention_days: int = 30
     tile_max_bytes: int = 2 * 1024**3
