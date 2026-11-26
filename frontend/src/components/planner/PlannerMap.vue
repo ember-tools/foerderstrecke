@@ -17,7 +17,8 @@ import {DEFAULT_CENTER, DEFAULT_ZOOM, MAP_LIMITS} from '../../scripts/tiles'
 /**
  * The map of a planned line: the route as sections coloured by how they stand, the source and the
  * end as tactical marks, the route's other vertices as handles, and the pumps as symbols that
- * slide along the route when dragged. While drawing, a click on the map extends the route.
+ * slide along the route when dragged. While drawing, a click on the map extends the route. Leaflet
+ * owns the classes of its container, so the drawing state sits on an element around it.
  */
 const props = defineProps<{ store: PlanStore, drawing: boolean, hover: number | null }>()
 
@@ -176,7 +177,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="container" class="planner-map size-full" :class="{'is-drawing': drawing}"/>
+  <div class="planner-map size-full" :class="{'is-drawing': drawing}">
+    <div ref="container" class="size-full"/>
+  </div>
 </template>
 
 <style>
@@ -185,7 +188,7 @@ onBeforeUnmount(() => {
   background-color: var(--ui-bg-muted);
 }
 
-.planner-map.is-drawing {
+.planner-map.is-drawing .leaflet-container {
   cursor: crosshair;
 }
 
