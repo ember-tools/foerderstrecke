@@ -1,0 +1,41 @@
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_DATA = Path(__file__).resolve().parent.parent.parent / "data"
+_ELEVATION = Path(__file__).resolve().parents[3] / "elevation" / "tiles"
+
+
+class Settings(BaseSettings):
+    """
+    Everything the server reads from the environment. Outside a container the data directory sits
+    beside the sources and is gitignored; the image points it at the mounted volume. The elevation
+    data is read only: locally it is where `./toolchain.sh elevation` writes it, in the image a
+    layer of its own.
+    """
+
+    data_dir: Path = _DATA
+    elevation_dir: Path = _ELEVATION
+    cors_origins: str = "*"
+    tile_retention_days: int = 30
+    tile_max_bytes: int = 2 * 1024**3
+    tile_sweep_seconds: int = 3600
+    share_max_bytes: int = 200_000
+    share_creations_per_hour: int = 30
+
+    model_config = SettingsConfigDict(env_file=".env")
+
+    @property
+    def origins(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def tile_dir(self) -> Path:
+        return self.data_dir / "tiles"
+
+    @property
+    def share_file(self) -> Path:
+        return self.data_dir / "shares.sqlite"
+
+
+settings = Settings()
