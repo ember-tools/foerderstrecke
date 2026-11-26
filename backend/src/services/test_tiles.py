@@ -235,6 +235,19 @@ class BudgetTest(unittest.TestCase):
         clock.now += 60
         self.assertTrue(budget.take("one"))
 
+    def test_a_client_left_alone_for_an_hour_is_forgotten(self):
+        clock = Clock()
+        budget = MissBudget(clock)
+        budget.take("one")
+        clock.now += 3000
+        budget.take("two")
+        budget.forget_idle()
+        self.assertTrue(budget.tracks("one"))
+        clock.now += 700
+        budget.forget_idle()
+        self.assertFalse(budget.tracks("one"))
+        self.assertTrue(budget.tracks("two"))
+
 
 class RouteTest(unittest.TestCase):
     def setUp(self):

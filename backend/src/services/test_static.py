@@ -16,6 +16,8 @@ class StaticResponseTest(unittest.TestCase):
         (root / "pages" / "hilfe").mkdir(parents=True)
         (root / "pages" / "index.html").write_text("landing page")
         (root / "pages" / "hilfe" / "index.html").write_text("help page")
+        (root / "pages" / "hilfe" / "pumpen").mkdir()
+        (root / "pages" / "hilfe" / "pumpen" / "index.html").write_text("help topic")
         (root / "index.html").write_text("shell")
         (root / "build.json").write_text("{}")
         (root / "robots.txt").write_text("robots")
@@ -44,6 +46,12 @@ class StaticResponseTest(unittest.TestCase):
         for path in ("hilfe", "hilfe/"):
             response = main.static_response(path)
             self.assertTrue(str(response.path).endswith("pages/hilfe/index.html"))
+            self.assertNotIn("x-robots-tag", response.headers)
+
+    def test_help_topic_page(self):
+        for path in ("hilfe/pumpen", "hilfe/pumpen/"):
+            response = main.static_response(path)
+            self.assertTrue(str(response.path).endswith("pages/hilfe/pumpen/index.html"), path)
             self.assertNotIn("x-robots-tag", response.headers)
 
     def test_app_routes_get_the_noindex_shell(self):

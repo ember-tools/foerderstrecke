@@ -18,6 +18,7 @@ from web.settings import settings
 
 configure_logging()
 logger = logging.getLogger(__name__)
+FORGET_INTERVAL = 60.0
 
 
 async def _evict_tiles(cache: TileCache) -> None:
@@ -30,6 +31,18 @@ async def _evict_tiles(cache: TileCache) -> None:
         except Exception:
             logger.exception("Evicting map tiles failed")
         await asyncio.sleep(settings.tile_sweep_seconds)
+
+
+async def _forget_clients(application: FastAPI) -> None:
+    """Once a minute, forget the client addresses the rate limits no longer need; a failed pass is
+    logged and retried next time."""
+    while True:
+        try:
+            application.state.tile_cache.forget_idle_clients()
+            application.state.share_limits.creation.forget_idle()
+        except Exception:
+            logger.exception("Forgetting idle clients failed")
+        await asyncio.sleep(FORGET_INTERVAL)
 
 
 @contextlib.asynccontextmanager
@@ -46,10 +59,12 @@ async def lifespan(application: FastAPI):
     if orphans:
         logger.info("Removed %s map tile files without an index entry", orphans)
     sweeper = asyncio.create_task(_evict_tiles(cache))
+    forgetter = asyncio.create_task(_forget_clients(application))
     yield
-    sweeper.cancel()
-    with contextlib.suppress(asyncio.CancelledError):
-        await sweeper
+    for task in (sweeper, forgetter):
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
     await cache.close()
     application.state.elevation.close()
     application.state.shares.close()

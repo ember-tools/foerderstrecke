@@ -120,13 +120,13 @@ function modeText(index: number): string {
 .print-table td {
   padding: 2px 4px;
   text-align: left;
-  border-bottom: 1px solid #999;
+  border-bottom: 1px solid var(--color-steel-400);
 }
 
 @media print {
   .planner-print {
     display: block;
-    color: #000;
+    color: var(--color-black);
   }
 }
 </style>
