@@ -112,7 +112,7 @@ export interface LineResult {
 }
 
 /** The pressure at `x` along a section starting at `start` with `startPressure`. */
-function pressureAt(profile: Profile, start: number, startPressure: number, lossPer100: number, x: number): number {
+export function pressureAt(profile: Profile, start: number, startPressure: number, lossPer100: number, x: number): number {
     return startPressure - lossPer100 * (x - start) / 100 - (heightAt(profile, x) - heightAt(profile, start)) / 10
 }
 
