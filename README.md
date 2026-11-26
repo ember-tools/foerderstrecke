@@ -61,15 +61,18 @@ Everything the server keeps lives under `/data`:
 
 | Path | Content |
 |---|---|
+| `/data/shares.sqlite` | Shared lines and tasks: the snapshot, its kind and the two tokens that open and delete it. Kept until deleted with the delete token |
 | `/data/tiles` | OpenStreetMap tiles fetched on demand, with `index.sqlite` recording when each was last read. Tiles unread for `TILE_RETENTION_DAYS` are deleted, and beyond `TILE_MAX_BYTES` the ones read longest ago |
 
 ### Environment
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `DATA_DIR` | `/data` in the image | Where tiles are kept |
+| `DATA_DIR` | `/data` in the image | Where shares and tiles are kept |
 | `ELEVATION_DIR` | `/elevation` in the image | Where the prepared elevation data is read from |
 | `CORS_ORIGINS` | `*` | Comma separated allowed origins; `https://foerderstrecke.emberbox.app` in production |
+| `SHARE_MAX_BYTES` | `200000` | Largest line or task accepted for sharing, as JSON |
+| `SHARE_CREATIONS_PER_HOUR` | `30` | Links one client address may create per hour |
 | `TILE_RETENTION_DAYS` | `30` | Days after its last read until a map tile is deleted |
 | `TILE_MAX_BYTES` | `2147483648` | Upper limit of the tile cache in bytes |
 | `TILE_SWEEP_SECONDS` | `3600` | How often unread tiles are evicted |

@@ -3,6 +3,7 @@ import {useConfirm} from '@emberbox/ui'
 import {computed, reactive, ref, watch} from 'vue'
 import {useRouter} from 'vue-router'
 import TaskSketch from '../components/learn/TaskSketch.vue'
+import ShareDialog, {type ShareOption} from '../components/share/ShareDialog.vue'
 import {FRICTION_TABLES, type FrictionTableId} from '../hydraulics/friction'
 import {t} from '../i18n'
 import {checkAnswers, type Verdict} from '../learn/check'
@@ -24,14 +25,17 @@ const {state, save, record, resetProgress} = useLearningState()
 
 const task = computed(() => {
   const current = state.value.current
+  if ('shared' in current) return current.shared
   if ('fixed' in current) return FIXED_TASKS.find(candidate => candidate.id === current.fixed) ?? FIXED_TASKS[0]!
   return generateTask(state.value.stage, current.seed, state.value.table)
 })
+const isShared = computed(() => task.value.id.startsWith('shared:'))
+const verdicts = ref<Verdict[] | null>(null)
+const solutionLocked = computed(() => isShared.value && !verdicts.value)
 const solution = computed(() => solveTask(task.value))
 const steps = computed(() => solutionSteps(task.value, solution.value))
 const line = computed(() => taskLine(task.value))
 const answers = reactive<Partial<Record<Question, number | null>>>({})
-const verdicts = ref<Verdict[] | null>(null)
 const showSolution = ref(false)
 const peeked = ref(false)
 const toast = useToast()
@@ -103,6 +107,14 @@ function formatAnswer(question: Question, value: number | null): string {
   return formatWhole(value)
 }
 
+const shareOptions = computed<ShareOption[]>(() => [{
+  kind: 'task',
+  label: t('share.task'),
+  description: t('share.learnTaskHelp'),
+  title: task.value.source ?? t(`learn.stages.${state.value.stage}`),
+  document: () => task.value,
+}])
+
 const correctCount = computed(() => verdicts.value?.filter(verdict => verdict.correct).length ?? 0)
 
 const placedPumps = computed(() => {
@@ -111,6 +123,7 @@ const placedPumps = computed(() => {
 })
 
 async function openInPlanner() {
+  if (solutionLocked.value) return
   if (hasStoredPlan() && !await confirm(t('learn.openInPlanner'), {
     description: t('learn.replacePlan'), confirmLabel: t('learn.openInPlanner'),
   })) return
@@ -181,14 +194,20 @@ const given = computed(() => {
       <UFormField :label="t('learn.table')">
         <USelect v-model="table" :items="tableItems" class="w-full"/>
       </UFormField>
-      <UButton icon="i-lucide-shuffle" :label="t('learn.next')" @click="nextTask"/>
+      <div class="flex gap-2">
+        <UButton icon="i-lucide-shuffle" :label="t('learn.next')" @click="nextTask"/>
+        <ShareDialog :options="shareOptions"/>
+      </div>
     </div>
     <UFormField :label="t('learn.fixed')">
       <USelect v-model="fixedId" :items="fixedItems" :placeholder="t('learn.fixedPlaceholder')" class="w-full"/>
     </UFormField>
 
     <section class="flex flex-col gap-4 rounded-md border border-default p-4">
-      <p v-if="task.source" class="m-0 text-sm text-muted">{{ t('learn.source', {source: task.source}) }}</p>
+      <p v-if="isShared" class="m-0 text-sm font-semibold">
+        {{ task.source ? t('learn.sharedTitle', {title: task.source}) : t('learn.shared') }}
+      </p>
+      <p v-else-if="task.source" class="m-0 text-sm text-muted">{{ t('learn.source', {source: task.source}) }}</p>
       <TaskSketch :task="task"/>
       <div class="grid gap-6 md:grid-cols-2">
         <div>
@@ -224,9 +243,11 @@ const given = computed(() => {
             <UButton type="submit" icon="i-lucide-check" :label="t('learn.check')"/>
             <UButton color="neutral" variant="outline" :icon="showSolution ? 'i-lucide-eye-off' : 'i-lucide-eye'"
                      :label="showSolution ? t('learn.hideSolution') : t('learn.showSolution')"
-                     @click="showSolution = !showSolution"/>
-            <UButton color="neutral" variant="ghost" icon="i-lucide-map" :label="t('learn.openInPlanner')" @click="openInPlanner"/>
+                     :disabled="solutionLocked" @click="showSolution = !showSolution"/>
+            <UButton color="neutral" variant="ghost" icon="i-lucide-map" :label="t('learn.openInPlanner')"
+                     :disabled="solutionLocked" @click="openInPlanner"/>
           </div>
+          <p v-if="solutionLocked" class="m-0 text-xs text-muted">{{ t('learn.solutionAfterCheck') }}</p>
           <p v-if="verdicts" class="m-0 text-sm font-semibold">
             {{ correctCount === verdicts.length ? t('learn.allCorrect') : t('learn.someWrong', {correct: correctCount, total: verdicts.length}) }}
           </p>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useConfirm} from '@emberbox/ui'
-import {onBeforeUnmount, onMounted, ref, useTemplateRef} from 'vue'
+import {computed, onBeforeUnmount, onMounted, ref, useTemplateRef} from 'vue'
 import {fetchElevationInfo} from '../api/elevation'
 import HeightList from '../components/planner/HeightList.vue'
 import LineSettings from '../components/planner/LineSettings.vue'
@@ -9,6 +9,8 @@ import PrintSheet from '../components/planner/PrintSheet.vue'
 import ProfileChart from '../components/planner/ProfileChart.vue'
 import PumpList from '../components/planner/PumpList.vue'
 import ResultPanel from '../components/planner/ResultPanel.vue'
+import ShareDialog, {type ShareOption} from '../components/share/ShareDialog.vue'
+import {planAsTask} from '../learn/shared'
 import {t} from '../i18n'
 import {createPlanStore} from '../plan/store'
 
@@ -26,6 +28,28 @@ const tabs = [
   {value: 'pumps', label: t('planner.tabPumps'), slot: 'pumps' as const},
   {value: 'result', label: t('planner.tabResult'), slot: 'result' as const},
 ]
+
+const heightsKnown = computed(() => store.plan.value.heightSource === 'manual'
+    || store.elevation.value.state === 'ready'
+    || (store.elevation.value.state === 'failed' && store.plan.value.corrections.some(correction => correction !== null)))
+
+const shareOptions = computed<ShareOption[]>(() => [
+  {
+    kind: 'plan',
+    label: t('share.plan'),
+    description: t('share.planHelp'),
+    title: store.plan.value.title,
+    document: () => store.plan.value,
+  },
+  {
+    kind: 'task',
+    label: t('share.task'),
+    description: t('share.taskHelp'),
+    title: store.plan.value.title,
+    document: () => planAsTask(store.plan.value, store.profile.value),
+    blocked: heightsKnown.value ? null : t('share.taskNeedsHeights'),
+  },
+])
 
 onMounted(async () => {
   window.addEventListener('pagehide', store.flush)
@@ -60,6 +84,7 @@ function print() {
                :disabled="store.plan.value.route.length < 2" @click="mapView?.fit()"/>
       <UButton color="neutral" variant="outline" icon="i-lucide-arrow-left-right" :label="t('planner.draw.reverse')"
                :disabled="store.plan.value.route.length < 2" @click="store.reverseRoute()"/>
+      <ShareDialog :options="shareOptions" :disabled="store.plan.value.route.length < 2"/>
       <UButton color="neutral" variant="outline" icon="i-lucide-printer" :label="t('planner.print.action')"
                :disabled="!store.result.value" @click="print"/>
       <UButton color="neutral" variant="ghost" icon="i-lucide-trash-2" :label="t('planner.draw.clear')"

@@ -6,6 +6,8 @@ const routes: RouteRecordRaw[] = [
         meta: {titleKey: 'routes.planner'}},
     {path: '/lernen', name: 'Learn', component: () => import('../views/LearnView.vue'),
         meta: {titleKey: 'routes.learn'}},
+    {path: '/s/:token', name: 'Shared', component: () => import('../views/ShareView.vue'),
+        meta: {titleKey: 'routes.shared'}},
     {path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('../views/NotFoundView.vue'),
         meta: {titleKey: 'routes.notFound'}},
 ]

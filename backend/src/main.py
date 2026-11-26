@@ -9,6 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
 from services.elevation import ElevationModel
+from services.shares import CreationLimit, ShareLimits, ShareStore
 from services.tiles import TileCache, tile_client
 from services.tiles import router as tile_router
 from web.app import router
@@ -36,6 +37,8 @@ async def lifespan(application: FastAPI):
     client = tile_client()
     cache = TileCache(settings.tile_dir, client, settings.tile_retention_days * 86400.0, settings.tile_max_bytes)
     application.state.tile_cache = cache
+    application.state.shares = ShareStore(settings.share_file)
+    application.state.share_limits = ShareLimits(settings.share_max_bytes, CreationLimit(settings.share_creations_per_hour))
     application.state.elevation = ElevationModel(settings.elevation_dir)
     if application.state.elevation.version is None:
         logger.warning("No elevation data in %s", settings.elevation_dir)
@@ -49,6 +52,7 @@ async def lifespan(application: FastAPI):
         await sweeper
     await cache.close()
     application.state.elevation.close()
+    application.state.shares.close()
     await client.aclose()
 
 
@@ -68,7 +72,7 @@ app.include_router(tile_router)
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok", "elevation": app.state.elevation.version}
+    return {"status": "ok", "elevation": app.state.elevation.version, "shares": app.state.shares.count()}
 
 
 _static = Path(__file__).resolve().parent.parent / "static"
