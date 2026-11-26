@@ -9,8 +9,7 @@ export default defineConfig({
         vue(),
         emberbox({
             url: 'https://foerderstrecke.emberbox.app',
-            // TODO: switch to the tool's own logo once @emberbox/ui ships it
-            logo: 'emberbox',
+            logo: 'foerderstrecke',
             app: {name: 'Förderstrecke', description: 'Wasserförderung über lange Wegstrecken planen und üben'},
             prerender: {entry: 'src/prerender.ts', paths: ['/', '/hilfe']},
         }),
