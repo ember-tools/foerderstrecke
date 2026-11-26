@@ -2,6 +2,7 @@
 import {useConfirm} from '@emberbox/ui'
 import {computed, reactive, ref, watch} from 'vue'
 import {useRouter} from 'vue-router'
+import TaskGiven from '../components/learn/TaskGiven.vue'
 import TaskSketch from '../components/learn/TaskSketch.vue'
 import ShareDialog, {type ShareOption} from '../components/share/ShareDialog.vue'
 import {FRICTION_TABLES, type FrictionTableId} from '../hydraulics/friction'
@@ -10,9 +11,9 @@ import {checkAnswers, type Verdict} from '../learn/check'
 import {taskAsPlan} from '../learn/planner'
 import {newSeed, useLearningState} from '../learn/progress'
 import {solutionSteps} from '../learn/steps'
-import {type Question, solveTask, taskLine, taskPump} from '../learn/task'
+import {type Question, solveTask} from '../learn/task'
 import {FIXED_TASKS, generateTask, type Stage, STAGES} from '../learn/tasks'
-import {formatBar, formatDistance, formatHeight, formatWhole} from '../plan/format'
+import {formatBar, formatDistance, formatWhole} from '../plan/format'
 import {hasStoredPlan, storePlan} from '../plan/store'
 
 /**
@@ -34,7 +35,6 @@ const verdicts = ref<Verdict[] | null>(null)
 const solutionLocked = computed(() => isShared.value && !verdicts.value)
 const solution = computed(() => solveTask(task.value))
 const steps = computed(() => solutionSteps(task.value, solution.value))
-const line = computed(() => taskLine(task.value))
 const answers = reactive<Partial<Record<Question, number | null>>>({})
 const showSolution = ref(false)
 const peeked = ref(false)
@@ -134,50 +134,6 @@ async function openInPlanner() {
   await router.push('/planer')
 }
 
-const given = computed(() => {
-  const current = task.value
-  const entries: {label: string, value: string}[] = []
-  entries.push({label: t('learn.task.length'), value: formatDistance(line.value.length)})
-  if (current.stretches.length > 1) {
-    entries.push({
-      label: t('learn.task.stretches'),
-      value: current.stretches.map(stretch => stretch.rise === 0
-          ? t('learn.task.stretchFlat', {length: formatDistance(stretch.length)})
-          : t(stretch.rise > 0 ? 'learn.task.stretchUp' : 'learn.task.stretchDown',
-              {length: formatDistance(stretch.length), rise: formatHeight(Math.abs(stretch.rise))})).join('; '),
-    })
-  } else if (current.stretches[0]!.rise !== 0) {
-    const rise = current.stretches[0]!.rise
-    entries.push({
-      label: t('learn.task.stretches'),
-      value: t(rise > 0 ? 'learn.task.stretchUp' : 'learn.task.stretchDown',
-          {length: formatDistance(line.value.length), rise: formatHeight(Math.abs(rise))}),
-    })
-  }
-  entries.push({label: t('learn.task.flow'), value: `${formatWhole(current.flow)} l/min`})
-  const size = FRICTION_TABLES[current.table].hose
-  entries.push({
-    label: t('learn.task.hose'),
-    value: t(current.lines === 2 ? 'learn.task.hoseDouble' : 'learn.task.hoseSingle', {size}),
-  })
-  entries.push({label: t('learn.task.table'), value: t(`planner.tables.${current.table}`)})
-  entries.push({label: t('learn.task.pump'), value: taskPump(current, current.firstDischarges.length).name})
-  if (current.firstDischarges.length) {
-    entries.push({
-      label: t('learn.task.firstDischarges'),
-      value: current.firstDischarges.map((pressure, index) => `${formatBar(pressure)} (${taskPump(current, index).name})`).join(', '),
-    })
-  }
-  if (!current.asked.includes('discharge')) {
-    entries.push({
-      label: t(current.firstDischarges.length ? 'learn.task.dischargeRest' : 'learn.task.discharge'),
-      value: formatBar(current.discharge),
-    })
-  }
-  entries.push({label: t('learn.task.endRequirement'), value: formatBar(current.endRequirement)})
-  if (current.givenPumps !== null) entries.push({label: t('learn.task.givenPumps'), value: String(current.givenPumps)})
-  return entries
-})
 </script>
 
 <template>
@@ -210,16 +166,7 @@ const given = computed(() => {
       <p v-else-if="task.source" class="m-0 text-sm text-muted">{{ t('learn.source', {source: task.source}) }}</p>
       <TaskSketch :task="task"/>
       <div class="grid gap-6 md:grid-cols-2">
-        <div>
-          <h2 class="m-0 mb-2 text-base font-semibold">{{ t('learn.given') }}</h2>
-          <dl class="m-0 flex flex-col gap-1 text-sm">
-            <div v-for="entry in given" :key="entry.label" class="grid grid-cols-[11rem_1fr] gap-2">
-              <dt class="text-muted">{{ entry.label }}</dt>
-              <dd class="m-0">{{ entry.value }}</dd>
-            </div>
-          </dl>
-          <p class="m-0 mt-2 text-xs text-muted">{{ t('learn.task.mode') }}</p>
-        </div>
+        <TaskGiven :task="task"/>
         <form class="flex flex-col gap-3" @submit.prevent="check">
           <h2 class="m-0 text-base font-semibold">{{ t('learn.asked') }}</h2>
           <UFormField v-for="question in task.asked" :key="`${task.id}-${question}`" :label="t(`learn.questions.${question}`)">

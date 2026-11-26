@@ -15,7 +15,7 @@ import type {PlanStore} from '../../plan/store'
  * the map can mark the same place.
  */
 const props = defineProps<{ store: PlanStore }>()
-const emit = defineEmits<{ hover: [distance: number | null] }>()
+const emit = defineEmits<{ inspect: [distance: number | null] }>()
 
 const MARGIN = {left: 52, right: 14, top: 18}
 const PANEL = 140
@@ -124,12 +124,12 @@ function onMove(event: PointerEvent) {
     return
   }
   hovered.value = share * length.value
-  emit('hover', hovered.value)
+  emit('inspect', hovered.value)
 }
 
 function onLeave() {
   hovered.value = null
-  emit('hover', null)
+  emit('inspect', null)
 }
 </script>
 

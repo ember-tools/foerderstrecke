@@ -18,7 +18,7 @@ import {createPlanStore} from '../plan/store'
 const store = createPlanStore()
 const confirm = useConfirm()
 const drawing = ref(store.plan.value.route.length === 0)
-const hover = ref<number | null>(null)
+const inspected = ref<number | null>(null)
 const tab = ref('line')
 const attribution = ref<string | null>(null)
 const mapView = useTemplateRef<InstanceType<typeof PlannerMap>>('mapView')
@@ -95,9 +95,9 @@ function print() {
     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
       <div class="flex min-w-0 flex-col gap-4">
         <div class="planner-screen h-[55vh] min-h-80 overflow-hidden rounded-md border border-default">
-          <PlannerMap ref="mapView" :store="store" :drawing="drawing" :hover="hover"/>
+          <PlannerMap ref="mapView" :store="store" :drawing="drawing" :marked="inspected"/>
         </div>
-        <ProfileChart :store="store" @hover="value => hover = value"/>
+        <ProfileChart :store="store" @inspect="value => inspected = value"/>
         <p class="planner-screen m-0 flex items-center gap-2 text-sm text-muted">
           <UIcon name="i-lucide-graduation-cap" class="size-4 shrink-0"/>
           {{ t('planner.notOperational') }} {{ t('planner.basis') }}

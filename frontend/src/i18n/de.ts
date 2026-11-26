@@ -10,6 +10,9 @@ export default {
         help: 'Hilfe',
         openPlanner: 'Strecke planen',
     },
+    units: {
+        flow: '{flow} l/min',
+    },
     routes: {
         planner: 'Planer',
         learn: 'Lernen',

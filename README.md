@@ -18,7 +18,8 @@ backend with reload and Vite on port 5177, and mounts the elevation data if it i
 
 ```sh
 ./toolchain.sh elevation   # download and prepare the elevation data; the image needs it
-./toolchain.sh verify      # backend tests, frontend tests, type check and build
+./toolchain.sh verify      # backend tests, frontend tests, type check, build and lint
+./toolchain.sh fe-audit    # every linter of @emberbox/lint, reporting without failing
 ./toolchain.sh be-serve    # build the frontend and serve everything on port 8000
 ```
 

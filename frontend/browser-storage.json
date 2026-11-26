@@ -1,0 +1,25 @@
+{
+  "entries": [
+    {
+      "key": "foerderstrecke.plan",
+      "purpose": "Die Strecke im Planer mit Verlauf, Höhen, Pumpen und Einstellungen, damit sie im Browser bleibt.",
+      "kind": "LOCAL_STORAGE"
+    },
+    {
+      "key": "foerderstrecke.learning",
+      "purpose": "Die aktuelle Rechenaufgabe, die gewählte Stufe und Tabelle und welche Aufgaben versucht und gelöst wurden.",
+      "kind": "LOCAL_STORAGE"
+    },
+    {
+      "key": "foerderstrecke.shares",
+      "purpose": "Die in diesem Browser erstellten Links mit dem Schlüssel, der sie wieder löscht.",
+      "kind": "LOCAL_STORAGE"
+    },
+    {
+      "key": "vueuse-color-scheme",
+      "purpose": "Ob die Seite hell oder dunkel erscheint.",
+      "kind": "LOCAL_STORAGE",
+      "source": "@emberbox/ui"
+    }
+  ]
+}
