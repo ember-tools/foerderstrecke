@@ -107,11 +107,13 @@ export default {
             loading: 'Höhen werden geladen …',
             failed: {
                 unavailable: 'Auf diesem Server liegen keine Höhendaten. Die Strecke gilt als eben; Höhen lassen sich je Punkt eintragen.',
-                outside: 'Die Strecke liegt außerhalb des Gebiets mit Höhendaten.',
+                outside: 'Die Strecke reicht über das Gebiet um Deutschland hinaus, für das es Höhendaten gibt. Höhen lassen sich je Punkt eintragen.',
                 'too-long': 'Die Strecke ist länger als 100 km; Höhen gibt es bis 100 km.',
                 offline: 'Die Höhen konnten nicht geladen werden. Die Strecke gilt vorerst als eben.',
             },
-            surfaceModel: 'Die Höhen sind ein Oberflächenmodell mit etwa 30 m Raster: Gebäude und Wald heben es an. Wo es nicht passt, Höhe je Punkt eintragen.',
+            source: 'Quelle',
+            license: 'Lizenz CC BY 4.0',
+            terrainModel: 'Die Höhen stammen aus einem Geländemodell mit etwa 30 m Raster: der Boden ohne Gebäude und Bäume. Wo es nicht passt, etwa auf einer Brücke, Höhe je Punkt eintragen.',
         },
         result: {
             holds: 'Die Strecke trägt.',
@@ -360,8 +362,8 @@ export default {
             heights: {
                 title: 'Höhen',
                 paragraphs: [
-                    'Die Höhen kommen aus dem Copernicus-Höhenmodell mit etwa 30 m Raster, das der Server selbst bereithält; kein Dritter erfährt, wo deine Strecke verläuft.',
-                    'Das Modell ist ein Oberflächenmodell: Es misst die Oberfläche mit Gebäuden und Bäumen, nicht den Boden. Im Wald oder in der Stadt liegt es daher oft einige Meter zu hoch, und eine Brücke oder ein Damm kann fehlen.',
+                    'Die Höhen kommen aus einem digitalen Geländemodell für Deutschland mit etwa 30 m Raster, zusammengestellt von Sonny aus den Geländemodellen der Länder, die per Laser aus der Luft vermessen wurden. Der Server hält es selbst bereit; kein Dritter erfährt, wo deine Strecke verläuft.',
+                    'Ein Geländemodell gibt den Boden ohne Gebäude und Bäume wieder, also dort, wo die Schläuche liegen. Eine Brücke, ein Damm oder eine neue Baustelle kann darin fehlen; jenseits des Gebiets um Deutschland gibt es keine Höhen.',
                     'Wo das Modell nicht passt, trägst du im Reiter „Strecke“ unter „Höhen“ die richtige Höhe für einen Punkt ein. Die Korrektur gilt genau an diesem Punkt und läuft zu den Nachbarpunkten hin aus. Mit „Höhen nur von Hand“ verläuft die Leitung gerade zwischen den eingetragenen Höhen, ganz ohne Modell.',
                 ],
             },

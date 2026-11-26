@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     """
     Everything the server reads from the environment. Outside a container the data directory sits
     beside the sources and is gitignored; the image points it at the mounted volume. The elevation
-    data is read only: locally it is where `./toolchain.sh elevation` writes it, in the image a
+    data is read only: locally it comes from Git LFS in `elevation/tiles`, in the image it is a
     layer of its own.
     """
 

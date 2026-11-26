@@ -13,11 +13,10 @@ The interface is German throughout; it is meant for German fire services.
 ## Running it
 
 The image is `ghcr.io/ember-tools/foerderstrecke`. `compose.yml` builds and starts it locally on
-port 8082 and needs the elevation data prepared first (see below); `compose.dev.yml` runs the
+port 8082 and needs the elevation data from Git LFS (see below); `compose.dev.yml` runs the
 backend with reload and Vite on port 5177, and mounts the elevation data if it is there.
 
 ```sh
-./toolchain.sh elevation   # download and prepare the elevation data; the image needs it
 ./toolchain.sh verify      # backend tests, frontend tests, type check, build and lint
 ./toolchain.sh fe-audit    # every linter of @emberbox/lint, reporting without failing
 ./toolchain.sh be-serve    # build the frontend and serve everything on port 8000
@@ -25,20 +24,29 @@ backend with reload and Vite on port 5177, and mounts the elevation data if it i
 
 ### Elevation data
 
-Heights come from the [Copernicus DEM GLO-30](https://spacedata.copernicus.eu/collections/copernicus-digital-elevation-model),
-a surface model (it includes buildings and trees) at about 30 m spacing. The server answers height
-and profile requests from its own copy, so no third party sees where a line runs.
+Heights come from [Sonny's LiDAR Digital Terrain Model of Germany](https://sonny.4lima.de) at one
+arc second (about 30 by 20 m), compiled from the terrain models of the federal states. It is a
+terrain model: it gives the ground without buildings and trees, which is where a hose line lies.
+The server answers height and profile requests from its own copy, so no third party sees where a
+line runs. Outside Germany's tiles there are no heights; they can be entered by hand.
 
-The data is never part of the repository. `tools/elevation.py` downloads the source tiles touching
-the map's box around Germany from the dataset's public bucket, checks each against the SHA-256 in
-`tools/elevation-sources.txt`, crops them to the box and writes whole metres in a compact grid
-format (`backend/src/elevation/grid.py`), about 280 MB for the box. CI keeps the result in its
-cache, keyed by the script, the checksums and the format, and the image carries it in a layer of
-its own at `/elevation`, built with fixed file times: an update that leaves the data alone leaves
-that layer alone, so a server pulling the new image does not download the heights again.
+The converted data lives in the repository through Git LFS: `elevation/tiles/*.dem`, 70 tiles in
+whole metres in a compact grid format (`backend/src/elevation/grid.py`), about 230 MB. Clone with
+Git LFS installed, or run `git lfs pull`, before building the image. The image carries the data in
+a layer of its own at `/elevation`, built with fixed file times: an update that leaves the data
+alone leaves that layer alone, so a server pulling the new image does not download the heights
+again. CI caches the LFS objects, so the data is fetched from GitHub only when it changes.
 
-Credit: Copernicus DEM GLO-30 © DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018,
-provided under COPERNICUS by the European Union and ESA; all rights reserved.
+To update the data, download the zips of the 1″ model from the project's site by hand (Google
+Drive asks for a sign-in) into `elevation/sonny/`, then:
+
+```sh
+python tools/elevation.py pin       # record the checksums of the zips in tools/elevation-sources.txt
+./toolchain.sh elevation            # check the zips and write elevation/tiles
+```
+
+Credit: Digitales Geländemodell Deutschland 1″ by Sonny (sonny.4lima.de), CC BY 4.0, based on the
+terrain models of the surveying authorities of the federal states.
 
 ### Behind Traefik
 

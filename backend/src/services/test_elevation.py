@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from elevation.grid import BLOCK, HEADER, Geometry, GridError, GridFile, decode, encode, tile_name, write
 from services import elevation
-from services.elevation import ElevationModel, ElevationUnavailable, distance
+from services.elevation import ElevationModel, ElevationUnavailable, OutsideData, distance
 
 ROWS, COLUMNS = 300, 280
 STEP = 1 / 3600
@@ -103,8 +103,37 @@ class ModelTest(unittest.TestCase):
             self.assertAlmostEqual(200.0, model.height(50.5, 15.1))
             model.close()
 
-    def test_a_missing_tile_in_the_box_is_the_sea(self):
-        self.assertEqual(0.0, self.model.height(54.5, 7.5))
+    def test_a_tile_the_data_does_not_have_gives_no_height(self):
+        self.assertIsNone(self.model.height(54.5, 7.5))
+
+    def test_without_fetched_data_the_model_has_none(self):
+        with tempfile.TemporaryDirectory() as folder:
+            directory = Path(folder)
+            (directory / "VERSION").write_text("test-dataset\n")
+            (directory / "N50E010.dem").write_text("version https://git-lfs.github.com/spec/v1\noid sha256:00\nsize 1\n")
+            self.assertIsNone(ElevationModel(directory).version)
+
+    def test_a_position_on_a_whole_degree_is_read_from_the_tile_holding_that_edge(self):
+        with tempfile.TemporaryDirectory() as folder:
+            directory = Path(folder)
+            (directory / "VERSION").write_text("test-dataset\n")
+            write(directory / tile_name(50, 10), Geometry(3, 3, 51.0, 10.0, STEP, STEP), [[700, 700, 700]] * 3)
+            model = ElevationModel(directory)
+            self.assertAlmostEqual(700.0, model.height(51.0, 10.0))
+            model.close()
+
+    def test_next_to_a_missing_tile_the_last_line_is_held(self):
+        with tempfile.TemporaryDirectory() as folder:
+            directory = Path(folder)
+            (directory / "VERSION").write_text("test-dataset\n")
+            write(directory / tile_name(50, 10), Geometry(2, 2, 50.0 + 2 * STEP, 10.0, STEP, STEP), [[100, 100], [200, 200]])
+            model = ElevationModel(directory)
+            self.assertAlmostEqual(200.0, model.height(50.0 + STEP / 2, 10.0 + STEP / 2))
+            model.close()
+
+    def test_a_profile_across_a_missing_tile_is_refused(self):
+        with self.assertRaises(OutsideData):
+            self.model.profile([position(10, 10), (54.5, 7.5)])
 
     def test_outside_the_box_there_is_no_height(self):
         self.assertIsNone(self.model.height(46.0, 10.0))
@@ -160,14 +189,14 @@ class ModelTest(unittest.TestCase):
         self.assertAlmostEqual(height_at(10, 200), profile.samples[-1][1])
 
     def test_profile_follows_each_segment(self):
-        line = [position(100, 0), position(100, 100), position(0, 100)]
+        line = [position(100, 1), position(100, 100), position(1, 100)]
         profile = self.model.profile(line)
         self.assertEqual(3, len(profile.vertices))
         at_corner = min(profile.samples, key=lambda sample: abs(sample[0] - profile.vertices[1]))
         self.assertAlmostEqual(height_at(100, 100), at_corner[1], delta=2.5)
 
     def test_long_lines_are_sampled_more_coarsely(self):
-        profile = self.model.profile([(48.0, 7.0), (54.0, 13.0)])
+        profile = self.model.profile([(50.1, 10.05), (50.9, 10.95)])
         self.assertLessEqual(len(profile.samples), elevation.MAX_SAMPLES + 1)
 
 
@@ -190,7 +219,9 @@ class ApiTest(unittest.TestCase):
     def test_info_names_the_dataset_and_its_credit(self):
         body = self.client.get("/api/elevation").json()
         self.assertEqual("test-dataset", body["dataset"])
-        self.assertIn("Copernicus", body["attribution"])
+        self.assertIn("Sonny", body["attribution"])
+        self.assertEqual("https://sonny.4lima.de", body["sourceUrl"])
+        self.assertIn("creativecommons.org/licenses/by/4.0", body["licenseUrl"])
 
     def test_points(self):
         response = self.client.post("/api/elevation/points", json={"points": [list(position(1, 1)), [46.0, 10.0]]})
@@ -206,6 +237,12 @@ class ApiTest(unittest.TestCase):
     def test_profiles_outside_the_box_are_refused(self):
         response = self.client.post("/api/elevation/profile", json={"line": [[51.0, 10.0], [46.0, 10.0]]})
         self.assertEqual(422, response.status_code)
+
+    def test_profiles_outside_the_data_are_refused(self):
+        start = position(1, 1)
+        response = self.client.post("/api/elevation/profile", json={"line": [list(start), [54.5, 7.5]]})
+        self.assertEqual(422, response.status_code)
+        self.assertIn("Höhendaten", response.json()["detail"])
 
     def test_overlong_profiles_are_refused(self):
         response = self.client.post("/api/elevation/profile", json={"line": [[48.0, 7.0], [54.0, 13.0]]})
