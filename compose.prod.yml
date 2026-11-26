@@ -1,0 +1,27 @@
+services:
+  foerderstrecke:
+    image: "ghcr.io/ember-tools/foerderstrecke:latest"
+    restart: unless-stopped
+    labels:
+      traefik.enable: true
+      traefik.docker.network: "${PROXY_NETWORK:-proxy}"
+      traefik.http.routers.foerderstrecke.rule: "Host(`${FOERDERSTRECKE_HOST:?set FOERDERSTRECKE_HOST to the public host name}`)"
+      traefik.http.routers.foerderstrecke.entrypoints: "${TRAEFIK_ENTRYPOINT:-websecure}"
+      traefik.http.routers.foerderstrecke.tls: true
+      traefik.http.routers.foerderstrecke.tls.certresolver: "${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      traefik.http.routers.foerderstrecke.observability.accessLogs: false
+      traefik.http.services.foerderstrecke.loadbalancer.server.port: 8000
+    environment:
+      CORS_ORIGINS: "https://${FOERDERSTRECKE_HOST}"
+    volumes:
+      - foerderstrecke-data:/data
+    networks:
+      - proxy
+
+volumes:
+  foerderstrecke-data:
+
+networks:
+  proxy:
+    name: "${PROXY_NETWORK:-proxy}"
+    external: true
