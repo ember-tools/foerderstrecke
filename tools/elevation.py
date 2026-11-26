@@ -1,14 +1,18 @@
-"""Prepares the elevation data the image carries: the Copernicus DEM GLO-30 tiles covering the box
-around Germany, cropped to the box, rounded to whole metres and written in the grid format of
+"""Prepares the elevation data the image carries: Sonny's LiDAR Digital Terrain Model of Germany at
+one arc second, built from the terrain models of the federal states, written in the grid format of
 `backend/src/elevation/grid.py`.
 
-The source tiles are named with their SHA-256 in `elevation-sources.txt`; a download that does not
-match is refused. Tiles the dataset does not have lie entirely on the sea, where the dataset's own
-documentation says to assume a height of 0 m.
+The model is a terrain model: it gives the ground, without buildings and trees, which is where a
+hose line lies. It is published under CC BY 4.0 at https://sonny.4lima.de as one zip per whole
+degree, each holding an SRTM-style `.hgt` file, and can only be downloaded from Google Drive by a
+signed-in user. The zips therefore go into `elevation/sonny/` by hand; their SHA-256 sums are
+recorded in `elevation-sources.txt`, and a zip that does not match is refused.
 
-    python tools/elevation.py fetch    download the source tiles into elevation/download
-    python tools/elevation.py build    write the grid files into elevation/tiles
-    python tools/elevation.py pin      record the checksums of the downloaded tiles (maintenance)
+The grid files are kept in the repository through Git LFS, so a build needs neither the zips nor
+this script. Run it only when the source changes.
+
+    python tools/elevation.py pin      record the checksums of the zips in elevation/sonny
+    python tools/elevation.py build    check the zips and write the grid files into elevation/tiles
 
 Needs numpy and rasterio; the server itself reads the result with the standard library alone.
 """
@@ -16,12 +20,10 @@ Needs numpy and rasterio; the server itself reads the result with the standard l
 import argparse
 import hashlib
 import importlib
-import math
 import os
+import re
 import shutil
 import sys
-import urllib.error
-import urllib.request
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
@@ -29,35 +31,12 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "backend" / "src"))
 grid = importlib.import_module("elevation.grid")
 
-DATASET = "copernicus-dem-glo30-2022"
-SOURCE = "https://copernicus-dem-30m.s3.amazonaws.com/{name}/{name}.tif"
+DATASET = "sonny-dtm-germany-1s-v3b"
 SOURCES = Path(__file__).resolve().with_name("elevation-sources.txt")
-DOWNLOAD = ROOT / "elevation" / "download"
+ZIPS = ROOT / "elevation" / "sonny"
 TILES = ROOT / "elevation" / "tiles"
+TILE_NAME = re.compile(r"^N(\d{2})E(\d{3})$")
 FIXED_TIME = 0
-
-
-def source_name(latitude: int, longitude: int) -> str:
-    """Return the dataset's name of the tile with the given south-west corner."""
-    return f"Copernicus_DSM_COG_10_N{latitude:02d}_00_E{longitude:03d}_00_DEM"
-
-
-def corners() -> list[tuple[int, int]]:
-    """Return the south-west corners of every whole-degree tile touching the box."""
-    west, south, east, north = grid.COVERAGE
-    return [(latitude, longitude)
-            for latitude in range(math.floor(south), math.ceil(north))
-            for longitude in range(math.floor(west), math.ceil(east))]
-
-
-def pinned() -> dict[str, str]:
-    """Return the recorded checksum of every tile the dataset has, by source name."""
-    entries = {}
-    for line in SOURCES.read_text().splitlines():
-        if line.strip() and not line.startswith("#"):
-            checksum, name = line.split()
-            entries[name] = checksum
-    return entries
 
 
 def checksum(file: Path) -> str:
@@ -69,88 +48,66 @@ def checksum(file: Path) -> str:
     return digest.hexdigest()
 
 
-def fetch() -> None:
-    """Download every pinned tile not yet present, checking each against its checksum."""
-    DOWNLOAD.mkdir(parents=True, exist_ok=True)
-    for name, expected in pinned().items():
-        target = DOWNLOAD / f"{name}.tif"
-        if target.is_file() and checksum(target) == expected:
-            continue
-        partial = target.with_suffix(".part")
-        with urllib.request.urlopen(SOURCE.format(name=name), timeout=120) as response, partial.open("wb") as out:
-            shutil.copyfileobj(response, out)
-        actual = checksum(partial)
-        if actual != expected:
-            partial.unlink()
-            raise SystemExit(f"{name}: checksum {actual} does not match {expected}")
-        partial.replace(target)
-        print(f"fetched {name}")
+def pinned() -> dict[str, str]:
+    """Return the recorded checksum of every source zip, by tile name such as N52E013."""
+    entries = {}
+    for line in SOURCES.read_text().splitlines():
+        if line.strip() and not line.startswith("#"):
+            sum_, name = line.split()
+            entries[name] = sum_
+    return entries
 
 
 def pin() -> None:
-    """Ask the dataset which tiles exist, download them and record their checksums."""
-    DOWNLOAD.mkdir(parents=True, exist_ok=True)
-    lines = [f"# {DATASET}: SHA-256 of every source tile touching the box {grid.COVERAGE}"]
-    for latitude, longitude in corners():
-        name = source_name(latitude, longitude)
-        target = DOWNLOAD / f"{name}.tif"
-        if not target.is_file():
-            partial = target.with_suffix(".part")
-            try:
-                with urllib.request.urlopen(SOURCE.format(name=name), timeout=120) as response, \
-                        partial.open("wb") as out:
-                    shutil.copyfileobj(response, out)
-            except urllib.error.HTTPError as error:
-                partial.unlink(missing_ok=True)
-                if error.code in (403, 404):
-                    continue
-                raise
-            partial.replace(target)
-        lines.append(f"{checksum(target)}  {name}")
+    """Record the checksums of the zips in elevation/sonny."""
+    names = sorted(path.stem for path in ZIPS.glob("N*.zip") if TILE_NAME.match(path.stem))
+    if not names:
+        raise SystemExit(f"No tile zips in {ZIPS}")
+    lines = [f"# {DATASET}: SHA-256 of every source zip, from https://sonny.4lima.de (CC BY 4.0)"]
+    lines += [f"{checksum(ZIPS / f'{name}.zip')}  {name}" for name in names]
     SOURCES.write_text("\n".join(lines) + "\n")
 
 
-def build_tile(latitude: int, longitude: int) -> str:
-    """Write the grid file of one source tile, cropped to the box and stamped with a fixed time,
-    and return a line saying what was written."""
-    import numpy
+def build_tile(name: str) -> str:
+    """Write the grid file of one tile, stamped with a fixed time, and return a line saying what
+    was written. A tile with voids is refused rather than written with holes."""
     import rasterio
-    from rasterio.windows import Window
 
-    west, south, east, north = grid.COVERAGE
-    with rasterio.open(DOWNLOAD / f"{source_name(latitude, longitude)}.tif") as source:
+    latitude, longitude = (int(part) for part in TILE_NAME.match(name).groups())
+    with rasterio.open(f"/vsizip/{ZIPS / f'{name}.zip'}/{name}.hgt") as source:
+        heights = source.read(1)
         transform = source.transform
-        column_step, row_step = transform.a, -transform.e
-        first_column = max(0, math.floor((west - transform.c) / column_step))
-        last_column = min(source.width, math.ceil((east - transform.c) / column_step))
-        first_row = max(0, math.floor((transform.f - north) / row_step))
-        last_row = min(source.height, math.ceil((transform.f - south) / row_step))
-        window = Window(first_column, first_row, last_column - first_column, last_row - first_row)
-        heights = numpy.rint(source.read(1, window=window)).astype(numpy.int16)
+        if source.nodata is not None and (heights == source.nodata).any():
+            raise SystemExit(f"{name} has voids")
     geometry = grid.Geometry(
         rows=heights.shape[0],
         columns=heights.shape[1],
-        north=transform.f - (first_row + 0.5) * row_step,
-        west=transform.c + (first_column + 0.5) * column_step,
-        latitude_step=row_step,
-        longitude_step=column_step,
+        north=transform.f + transform.e / 2,
+        west=transform.c + transform.a / 2,
+        latitude_step=-transform.e,
+        longitude_step=transform.a,
     )
     target = TILES / grid.tile_name(latitude, longitude)
-    grid.write(target, geometry, heights.tolist())
+    grid.write(target, geometry, heights.astype("int16").tolist())
     os.utime(target, (FIXED_TIME, FIXED_TIME))
     return f"built {target.name}: {geometry.rows}×{geometry.columns}, {target.stat().st_size / 1e6:.1f} MB"
 
 
 def build() -> None:
-    """Write one grid file per pinned tile, a tile per processor at a time, and stamp the folder
-    with a fixed time too, so an unchanged result gives an unchanged image layer."""
+    """Check every pinned zip, then write one grid file per tile, a tile per processor at a time,
+    and stamp the folder with a fixed time too, so unchanged data gives an unchanged image layer."""
+    names = pinned()
+    for name, expected in names.items():
+        if not (ZIPS / f"{name}.zip").is_file():
+            raise SystemExit(f"{name}.zip is missing in {ZIPS}")
+        actual = checksum(ZIPS / f"{name}.zip")
+        if actual != expected:
+            raise SystemExit(f"{name}: checksum {actual} does not match {expected}")
     if TILES.exists():
         shutil.rmtree(TILES)
     TILES.mkdir(parents=True)
-    names = pinned()
-    present = [corner for corner in corners() if source_name(*corner) in names]
     with ProcessPoolExecutor() as pool:
-        for line in pool.map(build_tile, *zip(*present)):
+        for line in pool.map(build_tile, sorted(names)):
             print(line, flush=True)
     (TILES / "VERSION").write_text(DATASET + "\n")
     for path in (TILES / "VERSION", TILES):
@@ -162,8 +119,8 @@ def build() -> None:
 def main() -> None:
     """Run the command named on the command line."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["fetch", "build", "pin"])
-    {"fetch": fetch, "build": build, "pin": pin}[parser.parse_args().command]()
+    parser.add_argument("command", choices=["pin", "build"])
+    {"pin": pin, "build": build}[parser.parse_args().command]()
 
 
 if __name__ == "__main__":

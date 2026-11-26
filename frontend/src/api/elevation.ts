@@ -21,6 +21,8 @@ export type ElevationResult = {ok: true, profile: ElevationProfile} | {ok: false
 export interface ElevationInfo {
     dataset: string
     attribution: string
+    sourceUrl: string
+    licenseUrl: string
 }
 
 /** Ask the server for the heights along a route. */

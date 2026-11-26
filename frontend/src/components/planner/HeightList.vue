@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {computed} from 'vue'
+import type {ElevationInfo} from '../../api/elevation'
 import {t} from '../../i18n'
 import {formatDistance, formatHeight} from '../../plan/format'
 import type {PlanStore} from '../../plan/store'
@@ -8,7 +9,7 @@ import type {PlanStore} from '../../plan/store'
  * The heights at the route's vertices: the model height, and a field to enter the real one where
  * the model is off, as on a bridge, beside a building or under trees.
  */
-const props = defineProps<{ store: PlanStore, attribution: string | null }>()
+const props = defineProps<{ store: PlanStore, credit: ElevationInfo | null }>()
 
 const plan = computed(() => props.store.plan.value)
 const elevation = computed(() => props.store.elevation.value)
@@ -38,7 +39,7 @@ function label(index: number): string {
       <p v-if="elevation.state === 'loading'" class="m-0 text-sm text-muted">{{ t('planner.heights.loading') }}</p>
       <UAlert v-if="elevation.state === 'failed'" color="warning" variant="subtle" icon="i-lucide-mountain"
               :description="t(`planner.heights.failed.${elevation.reason}`)"/>
-      <p class="m-0 text-sm text-muted">{{ t('planner.heights.surfaceModel') }}</p>
+      <p class="m-0 text-sm text-muted">{{ t('planner.heights.terrainModel') }}</p>
     </template>
     <ul class="m-0 flex list-none flex-col gap-2 p-0">
       <li v-for="(point, index) in plan.route" :key="`${index}-${point[0]}-${point[1]}`"
@@ -61,6 +62,10 @@ function label(index: number): string {
         <span v-else class="w-8"/>
       </li>
     </ul>
-    <p v-if="attribution && plan.heightSource === 'model'" class="m-0 text-xs text-muted">{{ attribution }}</p>
+    <p v-if="credit && plan.heightSource === 'model'" class="m-0 text-xs text-muted">
+      {{ credit.attribution }} ·
+      <a :href="credit.sourceUrl" target="_blank" rel="noopener" class="underline">{{ t('planner.heights.source') }}</a> ·
+      <a :href="credit.licenseUrl" target="_blank" rel="noopener" class="underline">{{ t('planner.heights.license') }}</a>
+    </p>
   </section>
 </template>

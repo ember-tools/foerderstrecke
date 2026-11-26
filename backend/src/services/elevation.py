@@ -1,10 +1,11 @@
 """Heights from the elevation data the image carries, for single points and along a line.
 
-The data is the Copernicus DEM GLO-30, a surface model at about 30 m spacing, in whole metres
-(`elevation.grid`). Heights between samples are interpolated bilinearly. Inside the covered box a
-tile the dataset does not have lies on the sea and reads as 0 m; outside the box there is no
-height at all. Positions are only ever sent in request bodies and never logged, so no third party
-and no log sees where a line runs.
+The data is Sonny's LiDAR terrain model of Germany at one arc second (about 30 by 20 m), built
+from the terrain models of the federal states: the ground without buildings and trees, in whole
+metres (`elevation.grid`). Heights between samples are interpolated bilinearly. Where the data
+has no tile, outside Germany's tiles or outside the covered box, there is no height at all.
+Positions are only ever sent in request bodies and never logged, so no third party and no log sees
+where a line runs.
 """
 
 import math
@@ -29,8 +30,13 @@ MAX_VERTICES = 500
 MAX_LINE_LENGTH = 100_000.0
 MIN_STEP = 10.0
 MAX_SAMPLES = 4000
-ATTRIBUTION = ("Höhen: Copernicus DEM GLO-30 © DLR e.V. 2010–2014 und © Airbus Defence and Space GmbH "
-               "2014–2018, bereitgestellt unter COPERNICUS von der Europäischen Union und der ESA; alle Rechte vorbehalten")
+ATTRIBUTION = ("Höhen: Digitales Geländemodell Deutschland 1″ von Sonny, nach den Geländemodellen der "
+               "Vermessungsverwaltungen der Länder, CC BY 4.0, für die Förderstrecke umgerechnet")
+
+LFS_POINTER = b"version https://git-lfs"
+SOURCE_URL = "https://sonny.4lima.de"
+LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/"
+OUTSIDE = "Die Strecke liegt außerhalb des Gebiets mit Höhendaten."
 
 router = APIRouter(prefix="/elevation")
 
@@ -41,6 +47,24 @@ def covered(latitude: float, longitude: float) -> bool:
     """Tell whether a position lies in the box the data covers."""
     west, south, east, north = COVERAGE
     return south <= latitude <= north and west <= longitude <= east
+
+
+def is_pointer(file: Path) -> bool:
+    """Tell whether a file is a Git LFS pointer rather than the data it stands for."""
+    with file.open("rb") as stream:
+        return stream.read(len(LFS_POINTER)) == LFS_POINTER
+
+
+def candidate_tiles(latitude: float, longitude: float) -> list[tuple[int, int]]:
+    """Return the tiles that may hold a position: the one it floors into, and for a position on a
+    whole degree also the tiles south and west of it, whose outermost sample lines lie there."""
+    south, west = math.floor(latitude), math.floor(longitude)
+    tiles = [(south, west)]
+    if latitude == south:
+        tiles.append((south - 1, west))
+    if longitude == west:
+        tiles.append((south, west - 1))
+    return tiles
 
 
 def distance(start: tuple[float, float], end: tuple[float, float]) -> float:
@@ -62,6 +86,10 @@ class Profile:
     samples: list[tuple[float, float]]
 
 
+class OutsideData(Exception):
+    """A position where the data has no height."""
+
+
 class ElevationUnavailable(Exception):
     """The server has no elevation data."""
 
@@ -71,34 +99,39 @@ class ElevationModel:
     blocks kept in memory. Requests run in worker threads, so the cache is guarded by a lock."""
 
     def __init__(self, directory: Path) -> None:
-        """Use the grid files in `directory`, which names its dataset in a `VERSION` file."""
+        """Use the grid files in `directory`, which names its dataset in a `VERSION` file. Grid files
+        Git LFS has not fetched yet are only pointers; then the model has no data, as without any."""
         self.directory = directory
         version = directory / "VERSION"
-        self.version = version.read_text().strip() if version.is_file() else None
+        fetched = not any(is_pointer(file) for file in directory.glob("*.dem"))
+        self.version = version.read_text().strip() if version.is_file() and fetched else None
         self._files: dict[str, GridFile | None] = {}
         self._blocks: OrderedDict[tuple[str, int], array] = OrderedDict()
         self._lock = threading.Lock()
 
     def height(self, latitude: float, longitude: float) -> float | None:
-        """Return the height at a position in metres, or None outside the covered box."""
+        """Return the height at a position in metres, or None where the data has none."""
         if self.version is None:
             raise ElevationUnavailable
         if not covered(latitude, longitude):
             return None
-        return self._height_in((math.floor(latitude), math.floor(longitude)), latitude, longitude)
+        for tile in candidate_tiles(latitude, longitude):
+            if self._file(tile_name(*tile)) is not None:
+                return self._height_in(tile, latitude, longitude)
+        return None
 
-    def _height_in(self, tile: tuple[int, int], latitude: float, longitude: float) -> float:
+    def _height_in(self, tile: tuple[int, int], latitude: float, longitude: float) -> float | None:
         """Return the height at a position from the given whole-degree tile.
 
         A tile's samples start on its north and west edge, so a strip along its south and east
         edge lies beyond its last sample line. There the height runs on towards the first line of
-        the neighbouring tile, taken from that tile directly; at the edge of the covered box the
-        last line is held.
+        the neighbouring tile, taken from that tile directly; where there is no neighbouring tile
+        the last line is held. A tile the data does not have gives no height.
         """
         name = tile_name(*tile)
         grid = self._file(name)
         if grid is None:
-            return 0.0
+            return None
         geometry = grid.geometry
         row = (geometry.north - latitude) / geometry.latitude_step
         column = (longitude - geometry.west) / geometry.longitude_step
@@ -127,19 +160,20 @@ class ElevationModel:
     def _across_seam(
         self, tile: tuple[int, int], neighbour: tuple[int, int], at: float, edge: float, beyond: float,
         edge_position: tuple[float, float], beyond_position: tuple[float, float],
-    ) -> float:
+    ) -> float | None:
         """Interpolate between a tile's outermost sample line and the first line of its neighbour,
         for a position in the strip between them, `at` being its coordinate across the seam."""
         inside = self._height_in(tile, *edge_position)
-        if not covered(*beyond_position):
+        outside = self._height_in(neighbour, *beyond_position) if covered(*beyond_position) else None
+        if inside is None or outside is None:
             return inside
-        outside = self._height_in(neighbour, *beyond_position)
         share = min(max((at - edge) / (beyond - edge), 0.0), 1.0)
         return inside * (1 - share) + outside * share
 
     def profile(self, line: list[tuple[float, float]]) -> Profile:
         """Return the heights along a line given as its vertices, sampled at even steps of at least
-        `MIN_STEP`, wider on long lines so there are at most `MAX_SAMPLES`, plus its end."""
+        `MIN_STEP`, wider on long lines so there are at most `MAX_SAMPLES`, plus its end. Raises
+        `OutsideData` when a sample has no height."""
         lengths = [distance(start, end) for start, end in zip(line, line[1:])]
         vertices = [0.0]
         for length in lengths:
@@ -159,7 +193,9 @@ class ElevationModel:
             (start_latitude, start_longitude), (end_latitude, end_longitude) = line[segment], line[segment + 1]
             height = self.height(start_latitude + (end_latitude - start_latitude) * share,
                                  start_longitude + (end_longitude - start_longitude) * share)
-            samples.append((at, 0.0 if height is None else height))
+            if height is None:
+                raise OutsideData
+            samples.append((at, height))
         return Profile(total, vertices, samples)
 
     def close(self) -> None:
@@ -203,7 +239,7 @@ class PointsRequest(BaseModel):
 
 
 class PointsResponse(BaseModel):
-    """The height of each position in metres, null outside the covered box."""
+    """The height of each position in metres, null where the data has none."""
 
     heights: list[float | None]
 
@@ -227,6 +263,8 @@ class InfoResponse(BaseModel):
 
     dataset: str
     attribution: str
+    source_url: str = Field(serialization_alias="sourceUrl")
+    license_url: str = Field(serialization_alias="licenseUrl")
 
 
 def _model(request: Request) -> ElevationModel:
@@ -246,14 +284,15 @@ def _positions(raw: Iterable[list[float]]) -> list[tuple[float, float]]:
     """Return positions as tuples, refusing any outside the covered box."""
     positions = [(latitude, longitude) for latitude, longitude in raw]
     if not all(covered(*position) for position in positions):
-        raise HTTPException(status_code=422, detail="Die Strecke liegt außerhalb des Gebiets mit Höhendaten.")
+        raise HTTPException(status_code=422, detail=OUTSIDE)
     return positions
 
 
 @router.get("")
 def info(request: Request) -> InfoResponse:
     """Return which dataset the heights come from."""
-    return InfoResponse(dataset=_model(request).version, attribution=ATTRIBUTION)
+    return InfoResponse(dataset=_model(request).version, attribution=ATTRIBUTION, source_url=SOURCE_URL,
+                        license_url=LICENSE_URL)
 
 
 @router.post("/points")
@@ -268,7 +307,10 @@ def points(body: PointsRequest, request: Request) -> PointsResponse:
 def profile(body: ProfileRequest, request: Request) -> ProfileResponse:
     """Return the heights along a line."""
     model = _model(request)
-    result = model.profile(_positions(body.line))
+    try:
+        result = model.profile(_positions(body.line))
+    except OutsideData as error:
+        raise HTTPException(status_code=422, detail=OUTSIDE) from error
     if result.length > MAX_LINE_LENGTH:
         raise HTTPException(status_code=422, detail="Die Strecke ist länger als 100 km.")
     return ProfileResponse(

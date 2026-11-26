@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {useConfirm} from '@emberbox/ui'
 import {computed, onBeforeUnmount, onMounted, ref, useTemplateRef} from 'vue'
-import {fetchElevationInfo} from '../api/elevation'
+import {type ElevationInfo, fetchElevationInfo} from '../api/elevation'
 import HeightList from '../components/planner/HeightList.vue'
 import LineSettings from '../components/planner/LineSettings.vue'
 import PlannerMap from '../components/planner/PlannerMap.vue'
@@ -20,7 +20,7 @@ const confirm = useConfirm()
 const drawing = ref(store.plan.value.route.length === 0)
 const inspected = ref<number | null>(null)
 const tab = ref('line')
-const attribution = ref<string | null>(null)
+const credit = ref<ElevationInfo | null>(null)
 const mapView = useTemplateRef<InstanceType<typeof PlannerMap>>('mapView')
 
 const tabs = [
@@ -53,7 +53,7 @@ const shareOptions = computed<ShareOption[]>(() => [
 
 onMounted(async () => {
   window.addEventListener('pagehide', store.flush)
-  attribution.value = (await fetchElevationInfo())?.attribution ?? null
+  credit.value = await fetchElevationInfo()
 })
 
 onBeforeUnmount(() => {
@@ -108,7 +108,7 @@ function print() {
           <template #line>
             <div class="flex flex-col gap-6 pt-2">
               <LineSettings :store="store"/>
-              <HeightList v-if="store.plan.value.route.length" :store="store" :attribution="attribution"/>
+              <HeightList v-if="store.plan.value.route.length" :store="store" :credit="credit"/>
             </div>
           </template>
           <template #pumps>
