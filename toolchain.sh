@@ -38,6 +38,9 @@ Frontend
   fe-dev                Vite dev server, proxying /api and /tiles to the backend
   fe-install            npm install
   fe-test               Unit tests with vitest
+  fe-lint [name] [args] Every linter of @emberbox/lint, as frontend/emberbox-lint.config.mjs sets
+                        them up, failing when one does; with a name only that one
+  fe-audit              All linters, non-gating; prints everything they find
   fe-deploy             Build and copy the result to backend/static, so the backend serves the
                         whole app from one port as the image does
 
@@ -59,7 +62,7 @@ Docker
                         elevation data when prepared
 
 Combined
-  verify                be-test, fe-test and fe-build, what CI runs
+  verify                be-test, fe-test, fe-build and fe-lint, what CI runs
 USAGE
 }
 
@@ -83,6 +86,8 @@ case "$cmd" in
     fe-dev)        fe; run npm run dev -- "$@" ;;
     fe-install)    fe; run npm install "$@" ;;
     fe-test)       fe; run npm test -- "$@" ;;
+    fe-lint)       fe; run npx emberbox-lint "$@" ;;
+    fe-audit)      fe; run npx emberbox-lint --audit ;;
     fe-deploy)
         fe; run npm run build
         rm -rf "$BACKEND/static"
@@ -117,6 +122,7 @@ case "$cmd" in
         "$ROOT/toolchain.sh" be-test
         "$ROOT/toolchain.sh" fe-test
         "$ROOT/toolchain.sh" fe-build
+        "$ROOT/toolchain.sh" fe-lint
         ;;
 
     help|-h|--help) usage ;;

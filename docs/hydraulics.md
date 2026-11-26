@@ -228,7 +228,7 @@ there is one.
 
 **Hoses.** Per section, length / 20 m rounded up; a double line doubles it. Reserve: one hose of
 the line's size per started 100 m of line length, ceil(total length / 100 m),
-doubled for a double line — a textbook rule of thumb [ECOMED], adjustable.
+doubled for a double line; a textbook rule of thumb [ECOMED], adjustable.
 
 ## Reference cases
 

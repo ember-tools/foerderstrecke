@@ -4,8 +4,6 @@ import {pumpType} from '../../hydraulics/pumps'
 import {t} from '../../i18n'
 import {formatBar, formatDistance, formatPosition, formatWhole} from '../../plan/format'
 import {pointAt} from '../../plan/geo'
-import {materialFor} from '../../plan/material'
-import {namedSections} from '../../plan/sections'
 import {sectionStatus} from '../../plan/status'
 import type {PlanStore} from '../../plan/store'
 
@@ -15,10 +13,10 @@ import type {PlanStore} from '../../plan/store'
  */
 const props = defineProps<{ store: PlanStore }>()
 
+const {material, sections} = props.store
+
 const plan = computed(() => props.store.plan.value)
 const result = computed(() => props.store.result.value)
-const material = computed(() => result.value ? materialFor(plan.value, result.value) : null)
-const sections = computed(() => result.value ? namedSections(result.value) : [])
 
 function modeText(index: number): string {
   const mode = result.value?.stations[index]?.mode
@@ -35,7 +33,7 @@ function modeText(index: number): string {
       <p class="m-0 text-sm">
         {{ t('planner.result.length') }} {{ formatDistance(result.length) }} ·
         {{ t(`planner.source.${plan.source.kind}`) }} ·
-        {{ formatWhole(plan.flow) }} l/min · {{ t(`planner.tables.${plan.table}`) }} ·
+        {{ t('units.flow', {flow: formatWhole(plan.flow)}) }} · {{ t(`planner.tables.${plan.table}`) }} ·
         {{ plan.lines === 2 ? t('planner.hydraulics.double') : t('planner.hydraulics.single') }} ·
         {{ t('planner.result.required') }} {{ formatBar(plan.end.requirement) }}
       </p>
@@ -52,7 +50,7 @@ function modeText(index: number): string {
       <table class="print-table">
         <thead>
           <tr>
-            <th></th>
+            <th/>
             <th>{{ t('planner.print.position') }}</th>
             <th>{{ t('planner.print.coordinates') }}</th>
             <th>{{ t('planner.hydraulics.pumpType') }}</th>
@@ -78,7 +76,7 @@ function modeText(index: number): string {
       <table class="print-table">
         <thead>
           <tr>
-            <th></th>
+            <th/>
             <th>{{ t('planner.result.length') }}</th>
             <th>{{ t('planner.result.hoses') }}</th>
             <th>{{ t('planner.result.start') }}</th>

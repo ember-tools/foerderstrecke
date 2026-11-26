@@ -2,18 +2,17 @@
 import {computed} from 'vue'
 import {t} from '../../i18n'
 import {formatBar, formatDistance, formatMetres, formatWhole} from '../../plan/format'
-import {materialFor} from '../../plan/material'
-import {namedSections} from '../../plan/sections'
 import {sectionStatus} from '../../plan/status'
 import type {PlanStore} from '../../plan/store'
 
 /** What the calculation says: whether the line holds, what it needs, and every section in turn. */
 const props = defineProps<{ store: PlanStore }>()
 
+const {material, sections} = props.store
+
 const plan = computed(() => props.store.plan.value)
 const result = computed(() => props.store.result.value)
-const material = computed(() => result.value ? materialFor(plan.value, result.value) : null)
-const sections = computed(() => result.value ? namedSections(result.value) : [])
+const pumpTypes = computed(() => material.value?.pumps.map(entry => `${entry.count} × ${entry.name}`).join(', ') ?? '')
 
 function errorText(error: NonNullable<typeof result.value>['errors'][number]): string {
   if (error.kind === 'hydrant-yield') {
@@ -67,11 +66,7 @@ const STATUS_ICON = {ok: 'i-lucide-circle-check', fails: 'i-lucide-circle-x'}
         </div>
         <div v-if="material && material.pumps.length" class="col-span-2">
           <dt class="text-muted">{{ t('planner.result.vehicles') }}</dt>
-          <dd class="m-0">
-            <span v-for="(entry, index) in material.pumps" :key="entry.name">
-              {{ index ? ', ' : '' }}{{ entry.count }} × {{ entry.name }}
-            </span>
-          </dd>
+          <dd class="m-0">{{ pumpTypes }}</dd>
         </div>
       </dl>
 

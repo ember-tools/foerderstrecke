@@ -20,7 +20,7 @@ import {DEFAULT_CENTER, DEFAULT_ZOOM, MAP_LIMITS} from '../../scripts/tiles'
  * slide along the route when dragged. While drawing, a click on the map extends the route. Leaflet
  * owns the classes of its container, so the drawing state sits on an element around it.
  */
-const props = defineProps<{ store: PlanStore, drawing: boolean, hover: number | null }>()
+const props = defineProps<{ store: PlanStore, drawing: boolean, marked: number | null }>()
 
 const container = useTemplateRef<HTMLDivElement>('container')
 const map = shallowRef<L.Map | null>(null)
@@ -133,11 +133,11 @@ function drawPumps() {
 
 function drawCursor() {
     const route = props.store.plan.value.route
-    if (props.hover === null || route.length < 2) {
+    if (props.marked === null || route.length < 2) {
         cursor.remove()
         return
     }
-    cursor.setLatLng(latLng(pointAt(route, props.hover)))
+    cursor.setLatLng(latLng(pointAt(route, props.marked)))
     if (map.value && !map.value.hasLayer(cursor)) cursor.addTo(map.value)
 }
 
@@ -155,7 +155,7 @@ onMounted(() => {
     })
     created.on('moveend', () => {
         const center = created.getCenter()
-        props.store.plan.value.view = {center: [center.lat, center.lng], zoom: created.getZoom()}
+        props.store.setView([center.lat, center.lng], created.getZoom())
     })
     map.value = created
     if (!plan.view) fit()
@@ -168,7 +168,7 @@ watch(() => [props.store.plan.value.route, props.store.result.value, props.store
     drawPumps()
 }, {deep: true, immediate: true})
 
-watch(() => props.hover, drawCursor)
+watch(() => props.marked, drawCursor)
 
 onBeforeUnmount(() => {
     map.value?.remove()
