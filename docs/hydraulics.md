@@ -151,7 +151,8 @@ line's p_a exceeds a pump's cap, the pump runs at its cap and the planner flags 
 - **Hydrant:** the user enters mains pressure and yield; typical mains pressure is 1.5 to 4.5 bar,
   yield about 800 l/min from an underground and about 1500 l/min from a pillar hydrant
   [HLFS-WF 4.2]. The intake stretch from hydrant to first pump has its own hoses, friction and
-  height: p_e = p_hydrant − p_R − p_geo must be at least 1.5 bar [HLFS-WF 7.1]. Q above the
+  height: p_e = p_hydrant − p_R − p_geo must be at least 1.5 bar [HLFS-WF 7.1]; with the pump at the
+  hydrant the stretch has no length and the mains pressure itself must reach 1.5 bar. Q above the
   entered yield is an error.
 - **Tank** (portable or a vehicle's): the pump draws from it by suction, p_e counted as 0.
 
@@ -217,7 +218,8 @@ last section max  = (p_a − p_end)  / (r + g) × 100 m
 
 both rounded down to whole hoses. They need r + g > 0; on ground falling steeply enough that
 r + g ≤ 0, height gain alone carries the water and no booster is needed.
-If p_a ≤ 1.5 bar, a closed line cannot be relayed at all.
+If p_a ≤ 1.5 bar, a closed line cannot be relayed at all. If p_a < p_end on a line that loses
+pressure (r + g > 0), the last section cannot deliver p_end, whatever the number of pumps.
 
 Because the spacing is rounded to whole hoses, placing the boosters can need one pump more than
 the pressure budget says (see reference case 2). In a learning task the answer that counts is the
