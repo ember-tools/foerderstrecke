@@ -12,7 +12,7 @@ export default defineConfig({
             // TODO: switch to the tool's own logo once @emberbox/ui ships it
             logo: 'emberbox',
             app: {name: 'Förderstrecke', description: 'Wasserförderung über lange Wegstrecken planen und üben'},
-            prerender: {entry: 'src/prerender.ts', paths: ['/']},
+            prerender: {entry: 'src/prerender.ts', paths: ['/', '/hilfe']},
         }),
     ],
     server: {

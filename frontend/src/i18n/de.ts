@@ -7,6 +7,7 @@ export default {
         landing: 'Start',
         planner: 'Planer',
         learn: 'Lernen',
+        help: 'Hilfe',
         openPlanner: 'Strecke planen',
     },
     routes: {
@@ -294,6 +295,131 @@ export default {
             offline: 'Der Server ist gerade nicht erreichbar.',
             invalid: 'Der Link enthält nichts, was sich öffnen lässt.',
             storage: 'Der Browser lässt nichts speichern; der Link lässt sich so nicht öffnen.',
+        },
+    },
+    landing: {
+        title: 'Förderstrecke – Wasserförderung über lange Wegstrecken',
+        description: 'Eine Förderstrecke auf der Karte planen und üben: Druckverluste, Pumpenabstände, Höhen und Schlauchbedarf für die Ausbildung, dazu Rechenaufgaben mit Lösungsweg. Kostenlos und ohne Anmeldung.',
+        eyebrow: 'Förderstrecke',
+        heading: 'Wasserförderung über lange Wegstrecken',
+        openLearn: 'Rechenaufgaben',
+        featuresHeading: 'Was die Förderstrecke kann',
+        features: {
+            map: {
+                title: 'Strecke auf der Karte',
+                text: 'Entnahmestelle, Schlauchleitung und Abgabe auf einer OpenStreetMap-Karte zeichnen. Die Länge kommt aus der Karte, die Höhen aus einem Höhenmodell; jede Höhe lässt sich von Hand korrigieren.',
+            },
+            pumps: {
+                title: 'Pumpen vorschlagen',
+                text: 'Die Förderstrecke setzt die Pumpen in ganzen Schläuchen so weit auseinander, wie der Druck trägt. Danach lassen sie sich frei entlang der Leitung verschieben.',
+            },
+            profile: {
+                title: 'Längsprofil und Druckverlauf',
+                text: 'Höhe und Druck über die ganze Strecke, jeder Abschnitt mit Druck am Anfang, Reibung, Höhe und Reserve. Wo die Strecke nicht trägt, ist sie rot.',
+            },
+            material: {
+                title: 'Material und Druckansicht',
+                text: 'Schläuche mit Reserve, Pumpen nach Typ, Verteiler und Behälter, dazu eine Übersicht zum Ausdrucken für die Übungsvorbereitung.',
+            },
+            learn: {
+                title: 'Rechenaufgaben',
+                text: 'Aufgaben in Stufen und Aufgaben aus den Lernunterlagen: selbst rechnen, prüfen lassen und den Lösungsweg Schritt für Schritt ansehen.',
+            },
+            share: {
+                title: 'Teilen per Link',
+                text: 'Eine Strecke oder eine Aufgabe per Link weitergeben, etwa an die Gruppe. Wer den Link öffnet, bekommt eine eigene Kopie.',
+            },
+        },
+        audienceHeading: 'Für wen',
+        audience: 'Für Maschinistinnen und Maschinisten in der Ausbildung, Zugführer, Ausbilderinnen und Ausbilder, die eine Übung planen, und Jugendfeuerwehren, die sehen wollen, warum an einer Stelle eine zweite Pumpe steht. Die Ergebnisse sind Ausbildungswerte nach den Lernunterlagen der Feuerwehrschulen, kein Einsatzwerkzeug.',
+    },
+    help: {
+        title: 'Hilfe zur Förderstrecke',
+        pageTitle: 'Hilfe – Förderstrecke',
+        description: 'So planst du in der Förderstrecke eine Wasserförderung über lange Wegstrecken, liest das Ergebnis und übst mit Rechenaufgaben.',
+        overview: {
+            title: 'Überblick',
+            paragraphs: [
+                'Die Förderstrecke rechnet eine Wasserförderung über lange Wegstrecken: Wie viel Druck geht durch Reibung und Höhe verloren, wo müssen Verstärkerpumpen stehen, und wie viele Schläuche werden gebraucht?',
+                'Gerechnet wird mit Richtwerten aus den Lernunterlagen der Feuerwehrschulen. Die Ergebnisse sind Ausbildungswerte für Unterricht und Übungsplanung, kein Ersatz für die Erkundung und Erfahrung vor Ort.',
+                'Deine Strecke liegt in deinem Browser. Erst wenn du sie teilst, liegt eine Kopie auf dem Server.',
+            ],
+        },
+        line: {
+            title: 'Strecke zeichnen',
+            draw: {
+                title: 'Zeichnen',
+                paragraphs: [
+                    'Unter „Planer“ klickst du auf „Strecke zeichnen“ und dann auf der Karte von der Entnahmestelle zur Abgabe, Punkt für Punkt entlang des Weges, den die Leitung nehmen soll. Der erste Punkt ist die Entnahmestelle, der letzte die Abgabe.',
+                    'Punkte verschiebst du mit der Maus. Ein Klick auf die Leitung fügt dort einen Punkt ein, ein Doppelklick auf einen Punkt entfernt ihn. „Richtung umkehren“ tauscht Entnahmestelle und Abgabe.',
+                ],
+            },
+            heights: {
+                title: 'Höhen',
+                paragraphs: [
+                    'Die Höhen kommen aus dem Copernicus-Höhenmodell mit etwa 30 m Raster, das der Server selbst bereithält; kein Dritter erfährt, wo deine Strecke verläuft.',
+                    'Das Modell ist ein Oberflächenmodell: Es misst die Oberfläche mit Gebäuden und Bäumen, nicht den Boden. Im Wald oder in der Stadt liegt es daher oft einige Meter zu hoch, und eine Brücke oder ein Damm kann fehlen.',
+                    'Wo das Modell nicht passt, trägst du im Reiter „Strecke“ unter „Höhen“ die richtige Höhe für einen Punkt ein. Die Korrektur gilt genau an diesem Punkt und läuft zu den Nachbarpunkten hin aus. Mit „Höhen nur von Hand“ verläuft die Leitung gerade zwischen den eingetragenen Höhen, ganz ohne Modell.',
+                ],
+            },
+            settings: {
+                title: 'Entnahmestelle, Abgabe und Leitung',
+                paragraphs: [
+                    'Bei offenem Gewässer gibst du die Saughöhe an; über 3 m garantiert die Pumpe ihren Nennförderstrom nicht mehr, über 7,5 m nur noch die Hälfte, über 8 m lässt sich praktisch nicht mehr ansaugen. Beim Hydranten gibst du Netzdruck und Entnahmemenge an: Am Eingang der ersten Pumpe müssen mindestens 1,5 bar ankommen.',
+                    'An der Abgabe brauchen Mehrzweckstrahlrohre 5 bar, Hohlstrahlrohre 6 bar, dazu 1 bar für die Leitungen hinter dem Verteiler. Bei freiem Auslauf in einen Behälter genügen 0 bar.',
+                    'Förderstrom, Reibungstabelle, eine oder zwei Leitungen, Ausgangsdruck und Schaltreihe gelten für die ganze Strecke, einzelne Pumpen können abweichen. Üblich sind 8 bar Ausgangsdruck mit Reserve; weniger schont die Pumpen. Der Pumpentyp gilt für Pumpen, die neu gesetzt oder vorgeschlagen werden. Die Reserve gibt an, wie viele Schläuche je angefangene 100 m und Leitung zusätzlich mitkommen.',
+                    'Die Unterlagen sind sich bei der Reibung in B-Schläuchen nicht einig: „Berlin/NRW“ rechnet bei 1000 l/min mit 1,7 bar je 100 m, „Hessen“ mit 1,4 bar. Die gewählte Tabelle steht immer beim Ergebnis.',
+                ],
+            },
+        },
+        pumps: {
+            title: 'Pumpen',
+            suggest: {
+                title: 'Pumpen vorschlagen',
+                paragraphs: [
+                    '„Pumpen vorschlagen“ stellt die erste Pumpe an die Entnahmestelle und jede weitere in ganzen Schläuchen (20 m) so weit wie möglich: dort, wo das Wasser gerade noch mit 1,5 bar ankommt (bei offener Schaltreihe mit 0 bar in den Behälter) und unterwegs über jede Kuppe kommt. Das geht weiter, bis die letzte Pumpe die Abgabe erreicht.',
+                    'Weil Pumpen nur alle 20 m stehen können, braucht die gesetzte Strecke manchmal eine Pumpe mehr, als die Rechnung nach Lehrbuch ergibt.',
+                ],
+            },
+            edit: {
+                title: 'Pumpen anpassen',
+                paragraphs: [
+                    'Auf der Karte ziehst du eine Pumpe entlang der Leitung an eine andere Stelle; die erste Pumpe bleibt an der Entnahmestelle, außer am Hydranten. „Pumpe hinzufügen“ setzt eine weitere in die Mitte des längsten Abschnitts.',
+                    'Im Reiter „Pumpen“ wählst du für jede Pumpe den Typ und einen eigenen Ausgangsdruck, ab der zweiten Pumpe auch den Zulauf: geschlossen direkt in die Pumpe oder offen über einen Behälter. Eine Pumpe liefert höchstens ihren Nenndruck plus den Druck, der an ihrem Eingang ankommt; läuft sie an dieser Grenze, steht es dabei.',
+                ],
+            },
+        },
+        result: {
+            title: 'Ergebnis lesen',
+            paragraphs: [
+                'Auf der Karte und im Längsprofil ist jeder Abschnitt grün, wenn er trägt, und rot gestrichelt, wenn nicht. Ein Abschnitt trägt, wenn am Ende der nötige Druck ankommt – 1,5 bar an der nächsten Pumpe, 0 bar am offenen Behälter, der gewählte Druck an der Abgabe – und der Druck unterwegs nirgends unter 0 fällt.',
+                'Das Längsprofil zeigt oben die Höhe, unten den Druck in der Leitung, beide über dieselbe Strecke. Fährst du mit der Maus darüber, siehst du Höhe und Druck an dieser Stelle, und auf der Karte erscheint ein Punkt.',
+                'Im Reiter „Ergebnis“ stehen Länge, Pumpen, Schläuche mit Reserve (standardmäßig ein Schlauch je angefangene 100 m und Leitung, einstellbar im Reiter „Strecke“) und jeder Abschnitt mit Druck am Anfang, Reibung, Höhe, Druck am Ende und Reserve. „Drucken“ gibt eine Übersicht mit Material, Pumpenstandorten und Abschnitten aus.',
+            ],
+        },
+        learn: {
+            title: 'Rechenaufgaben',
+            paragraphs: [
+                'Unter „Lernen“ wählst du eine Stufe – ebene Strecke, Steigung, Gefälle, beides, zwei Leitungen oder den Ausgangsdruck bei gegebener Pumpenzahl – oder eine Aufgabe aus den Lernunterlagen. „Neue Aufgabe“ würfelt eine neue.',
+                'Du rechnest selbst und trägst die Ergebnisse ein. Pumpen und Schläuche müssen genau stimmen. Beim Druckbedarf gelten ±0,3 bar; beim Pumpenabstand der auf ganze Schläuche abgerundete Wert, höchstens einen Schlauch weniger und nie mehr als der genaue Wert; beim Ausgangsdruck 0,1 bar darunter bis 0,5 bar darüber.',
+                '„Lösungsweg zeigen“ rechnet jeden Schritt mit denselben Formeln wie der Planer vor. „Im Planer öffnen“ legt die Aufgabe als gerade Strecke mit ihren Höhen in den Planer.',
+                'Welche Aufgaben du gelöst hast, merkt sich nur dein Browser.',
+            ],
+        },
+        share: {
+            title: 'Teilen',
+            paragraphs: [
+                '„Teilen“ öffnet ein Fenster; „Strecke teilen“ legt dort eine Kopie deiner Strecke auf den Server und gibt dir einen Link. Wer ihn öffnet, bekommt die Strecke als eigene Kopie in den Planer, nach einer Rückfrage anstelle der Strecke, die dort schon liegt; Änderungen danach gelangen nicht in den Link.',
+                '„Als Aufgabe teilen“ macht aus der Strecke eine Rechenaufgabe für die Gruppe; das geht, sobald die Höhen geladen oder von Hand eingetragen sind. „Teilen“ unter „Lernen“ teilt die gezeigte Aufgabe. Bei geteilten Aufgaben erscheint der Lösungsweg erst, nachdem geprüft wurde.',
+                'Die Links, die du in diesem Browser erstellt hast, stehen im Teilen-Fenster; dort löschst du einen Link wieder. Löschen lässt sich ein Link nur in dem Browser, in dem er erstellt wurde; ohne ihn bleibt der Link auf dem Server, bis du die Löschung beim Betreiber verlangst.',
+            ],
+        },
+        sources: {
+            title: 'Rechengrundlagen',
+            paragraphs: [
+                'Höhenverlust 1 bar je 10 m Steigung, Gewinn 1 bar je 10 m Gefälle. Reibung wächst mit der Länge und etwa mit dem Quadrat des Förderstroms; zwischen den Tabellenwerten wird entsprechend gerechnet. Zwei Leitungen tragen je den halben Förderstrom.',
+                'Quellen: Hessische Landesfeuerwehrschule, Lernunterlagen „Wasserförderung“ und „Feuerlöschkreiselpumpen“; Feuerwehr Wuppertal, Lehrgangsunterlage Maschinist; CGDIS Luxemburg, „Wasserversorgung“; Werte der Berliner Feuerwehr. Die Einzelheiten stehen in der Dokumentation im Quellcode.',
+            ],
         },
     },
     notFound: {

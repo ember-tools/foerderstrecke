@@ -2,6 +2,7 @@ import {createRouter, type RouteRecordRaw, type RouterHistory} from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
     {path: '/', name: 'Landing', component: () => import('../views/LandingView.vue'), meta: {public: true}},
+    {path: '/hilfe', name: 'Help', component: () => import('../views/HelpView.vue'), meta: {public: true}},
     {path: '/planer', name: 'Planner', component: () => import('../views/PlannerView.vue'),
         meta: {titleKey: 'routes.planner'}},
     {path: '/lernen', name: 'Learn', component: () => import('../views/LearnView.vue'),

@@ -27,6 +27,7 @@ useHead({
         <RouterLink to="/" class="nav-link">{{ t('nav.landing') }}</RouterLink>
         <RouterLink to="/planer" class="nav-link">{{ t('nav.planner') }}</RouterLink>
         <RouterLink to="/lernen" class="nav-link">{{ t('nav.learn') }}</RouterLink>
+        <RouterLink to="/hilfe" class="nav-link">{{ t('nav.help') }}</RouterLink>
       </template>
     </AppHeader>
 
@@ -34,7 +35,8 @@ useHead({
       <RouterView/>
     </main>
 
-    <AppFooter tool="Förderstrecke" source="https://github.com/ember-tools/foerderstrecke" license="AGPL-3.0"/>
+    <AppFooter tool="Förderstrecke" source="https://github.com/ember-tools/foerderstrecke" license="AGPL-3.0"
+               help="/hilfe"/>
   </EmberboxApp>
 </template>
 
